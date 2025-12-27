@@ -60,12 +60,12 @@ chmod 664 data/node_${NODE}.txt data/${NODE}.qcow2
 
 while true;
 do
-  echo "Waiting for IP..."
+  echo "Waiting IP for ${NODE}..."
   ip=$(getIP "$NODE")
   if [ "$ip" != "" ]; then
     break
   fi
-  sleep 1
+  sleep 5
 done
 
 ssh-keygen -f "${HOME}/.ssh/known_hosts" -R ${ip} > /dev/null 2>&1

@@ -1,11 +1,18 @@
 # Install k8s in vm
 
+## Image ubuntu.img, keys....
+
+```
+wget -O data/ubuntu24.img https://cloud-images.ubuntu.com/minimal/daily/plucky/current/plucky-minimal-cloudimg-amd64.img
+ssh-keygen -t ed25519 -f data/keys -N "" -q
+qemu-img convert -f qcow2 -O qcow2 data/ubuntu24.img data/TEMPLATE.qcow2
+qemu-img resize data/TEMPLATE.qcow2 +20G
+```
+
+
 ## Create nodes
 ```
-./vm.sh node01
-./vm.sh node02
-./vm.sh node03
-./vm.sh node04
+./vms.sh
 ```
 
 
@@ -37,12 +44,13 @@ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 ```
 
+Copy: kubeadm join.....
 
 ## Start workers
 ```
-./ssh.sh node02 kubeadm join 192.168.122.23:6443 --token ph4y8b.5zj48x8524sor6px --discovery-token-ca-cert-hash sha256:828b133fedfa64f0d095e544e6608bdef9e11ffe6d40a67ab4672ad932e67ccc
-./ssh.sh node03 kubeadm join 192.168.122.23:6443 --token ph4y8b.5zj48x8524sor6px --discovery-token-ca-cert-hash sha256:828b133fedfa64f0d095e544e6608bdef9e11ffe6d40a67ab4672ad932e67ccc
-./ssh.sh node04 kubeadm join 192.168.122.23:6443 --token ph4y8b.5zj48x8524sor6px --discovery-token-ca-cert-hash sha256:828b133fedfa64f0d095e544e6608bdef9e11ffe6d40a67ab4672ad932e67ccc
+./ssh.sh node02 kubeadm join 192.168.122.224:6443 --token ux4c4s.24tl7qv4ewp2hxk2 --discovery-token-ca-cert-hash sha256:4443722b9f9958f0c3e834f8c83bd27a84f5ffdbbb5013a13f96cbb88ba160bb
+./ssh.sh node03 kubeadm join 192.168.122.224:6443 --token ux4c4s.24tl7qv4ewp2hxk2 --discovery-token-ca-cert-hash sha256:4443722b9f9958f0c3e834f8c83bd27a84f5ffdbbb5013a13f96cbb88ba160bb
+./ssh.sh node04 kubeadm join 192.168.122.224:6443 --token ux4c4s.24tl7qv4ewp2hxk2 --discovery-token-ca-cert-hash sha256:4443722b9f9958f0c3e834f8c83bd27a84f5ffdbbb5013a13f96cbb88ba160bb
 ```
 
 ## Preparing k8s
@@ -53,4 +61,10 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 ```
 kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
 kubectl get nodes
+
+kubectl get pods -A
 ```
+
+
+# Destroy cluster
+./delete.sh
