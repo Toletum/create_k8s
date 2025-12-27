@@ -130,10 +130,13 @@ kubectl top nodes
 
 ## Hello, World
 ### install local registry
+```
 podman pull k8s.gcr.io/echoserver:1.10
 podman tag k8s.gcr.io/echoserver:1.10 192.168.0.130:5000/echoserver:1.10
 podman push 192.168.0.130:5000/echoserver:1.10
+```
 
+### Deploy
 ```
 kubectl create deployment hola-k8s --image=192.168.0.130:5000/echoserver:1.10
 kubectl expose deployment hola-k8s --type=NodePort --port=8080
