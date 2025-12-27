@@ -72,4 +72,4 @@ ssh-keygen -f "${HOME}/.ssh/known_hosts" -R ${ip} > /dev/null 2>&1
 
 echo "${NODE}: ${ip} OK"
 
-sudo sed "/${NODE}$/c\\$ip ${NODE}" /etc/hosts
+sudo sed -i "/${NODE}$/c\\$ip ${NODE}" /etc/hosts
