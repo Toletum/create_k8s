@@ -95,5 +95,56 @@ kubectl delete service hola-k8s
 kubectl delete deployment hola-k8s
 ```
 
+# Local Registry
+```
+podman run -d -p 5000:5000 --restart=always --name registry registry:2
+
+
+cat /etc/containers/registries.conf
+# Formato V2 Unificado
+unqualified-search-registries = ["docker.io", "quay.io"]
+
+[[registry]]
+location = "192.168.0.130:5000"
+insecure = true
+```
+
+```
+podman pull alpine
+podman tag docker.io/library/alpine 192.168.0.130:5000/mi-alpine-local
+podman push 192.168.0.130:5000/mi-alpine-local
+```
+
+
+
+
+
+## Set containerd to local registry
+
+```
+ansible-playbook playbook/local.yaml
+```
+
+### Test local registry
+```
+./ssh.sh node01 crictl pull 192.168.0.130:5000/mi-alpine-local
+./ssh.sh node02 crictl pull 192.168.0.130:5000/mi-alpine-local
+./ssh.sh node03 crictl pull 192.168.0.130:5000/mi-alpine-local
+./ssh.sh node04 crictl pull 192.168.0.130:5000/mi-alpine-local
+
+
+./ssh.sh node01 crictl images
+./ssh.sh node02 crictl images
+./ssh.sh node03 crictl images
+./ssh.sh node04 crictl images
+```
+
+### Test local registry in k8s
+```
+kubectl run prueba-local --image=192.168.0.130:5000/mi-alpine-local -- /bin/sh -c "while true; do echo 'Hola desde el registro local'; sleep 30; done"
+
+kubectl logs prueba-local
+```
+
 # Destroy cluster
 ./delete.sh
