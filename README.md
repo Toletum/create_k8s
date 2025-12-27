@@ -72,6 +72,28 @@ kubectl top nodes
 
 ```
 
+## Hello, World
+```
+kubectl create deployment hola-k8s --image=k8s.gcr.io/echoserver:1.10
+kubectl expose deployment hola-k8s --type=NodePort --port=8080
+
+kubectl get pods
+kubectl get svc hola-k8s
+```
+
+
+Host node
+```
+curl node01:30460
+curl node02:30460
+curl node03:30460
+curl node04:30460
+```
+
+```
+kubectl delete service hola-k8s
+kubectl delete deployment hola-k8s
+```
 
 # Destroy cluster
 ./delete.sh
