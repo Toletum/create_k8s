@@ -6,6 +6,5 @@ source config
 NODE="$1"
 shift
 
-ip=$(virsh domifaddr "$NODE" | awk '/vnet/ {print $4}' | cut -d'/' -f1)
-
-ssh -i data/keys -t root@${ip} $*
+ssh-keygen -f '/home/toletum/.ssh/known_hosts' -R "${NODE}"
+ssh -o StrictHostKeyChecking=no -i data/keys -t root@${NODE} $*
