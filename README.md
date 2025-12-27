@@ -3,6 +3,7 @@
 ## Image ubuntu.img, keys....
 
 ```
+mkdir data  
 wget -O data/ubuntu24.img https://cloud-images.ubuntu.com/minimal/daily/plucky/current/plucky-minimal-cloudimg-amd64.img
 ssh-keygen -t ed25519 -f data/keys -N "" -q
 qemu-img convert -f qcow2 -O qcow2 data/ubuntu24.img data/TEMPLATE.qcow2
@@ -63,6 +64,12 @@ kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/
 kubectl get nodes
 
 kubectl get pods -A
+
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+kubectl patch deployment metrics-server -n kube-system --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--kubelet-insecure-tls"}]'
+
+kubectl top nodes
+
 ```
 
 
