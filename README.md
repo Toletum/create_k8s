@@ -146,5 +146,14 @@ kubectl run prueba-local --image=192.168.0.130:5000/mi-alpine-local -- /bin/sh -
 kubectl logs prueba-local
 ```
 
+### Clean tests
+```
+kubectl delete pod prueba-local
+kubectl delete deployment hola-k8s
+kubectl delete svc hola-k8s
+```
+
 # Destroy cluster
+```
 ./delete.sh
+```
