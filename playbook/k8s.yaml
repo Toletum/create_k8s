@@ -2,17 +2,20 @@
 - name: Preparar nodos para Kubernetes
   hosts: all
   become: yes
+  any_errors_fatal: true
   tasks:
     - name: 1. Desactivar SWAP (Requerido por K8s)
       shell: |
         swapoff -a
         sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+      tags: task1
 
     - name: 2. Cargar módulos del kernel necesarios
       shell: |
         modprobe overlay
         modprobe br_netfilter
       # Esto asegura que los sysctl del paso siguiente no den "Invalid argument"
+      tags: task2
 
     - name: 3. Configurar red del Kernel (sysctl)
       ansible.posix.sysctl:
@@ -23,21 +26,14 @@
       loop:
         - { name: "net.ipv4.ip_forward", value: "1" }
         - { name: "net.bridge.bridge-nf-call-iptables", value: "1" }
+      tags: task3
 
     - name: 4. Instalar dependencias de sistema y herramientas
       apt:
-        name:
-          [
-            apt-transport-https,
-            ca-certificates,
-            curl,
-            gpg,
-            conntrack,
-            containerd,
-            vim,
-          ]
+        name: [apt-transport-https, ca-certificates, curl, gpg, vim]
         state: present
         update_cache: yes
+      tags: task4
 
     - name: 5. Añadir Repositorio oficial de Kubernetes
       shell: |
@@ -46,12 +42,14 @@
         echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
       args:
         creates: /etc/apt/sources.list.d/kubernetes.list
+      tags: task5
 
     - name: 6. Instalar herramientas de K8s (Kubeadm, Kubelet)
       apt:
-        name: [kubelet, kubeadm, kubectl]
+        name: [conntrack, containerd, kubelet, kubeadm, kubectl]
         state: present
         update_cache: yes
+      tags: task6
 
     - name: 7. Configurar Containerd (SystemdCgroup)
       ansible.builtin.shell:
@@ -60,6 +58,7 @@
           containerd config default > /etc/containerd/config.toml
       args:
         creates: /etc/containerd/config.toml
+      tags: task7
 
     - name: 8. Activar SystemdCgroup en el TOML
       ansible.builtin.replace:
@@ -67,6 +66,7 @@
         regexp: "SystemdCgroup = false"
         replace: "SystemdCgroup = true"
       register: containerd_updated
+      tags: task8
 
     - name: 9. Reiniciar servicios
       ansible.builtin.systemd:
@@ -75,3 +75,4 @@
         enabled: yes
       loop: [containerd, kubelet]
       when: containerd_updated.changed
+      tags: task9

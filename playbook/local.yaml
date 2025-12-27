@@ -24,12 +24,51 @@
             skip_verify = true
         mode: "0644"
 
+    - name: Crear directorios para mirrors
+      file:
+        path: "/etc/containerd/certs.d/{{ item }}"
+        state: directory
+      loop:
+        - registry.k8s.io
+        - ghcr.io
+
+    - name: Configurar hosts.toml para el registro local
+      copy:
+        dest: "/etc/containerd/certs.d/{{ item }}/hosts.toml"
+        content: |
+          server = "http://{{ registry_addr }}"
+          [host."http://{{ registry_addr }}"]
+            capabilities = ["pull", "resolve"]
+            skip_verify = true
+            override_path = true
+      loop:
+        - registry.k8s.io
+        - ghcr.io
+      notify: Reiniciar containerd
+
     - name: 3. Forzar el cambio de config_path en config.toml
       replace:
         path: /etc/containerd/config.toml
         regexp: 'config_path\s*=\s*".*"'
         replace: 'config_path = "{{ certs_dir }}"'
       notify: Reiniciar containerd
+
+    - name: 4. Forzar el cambio de sandbox_image
+      replace:
+        path: /etc/containerd/config.toml
+        regexp: 'sandbox_image\s*=\s*".*"'
+        replace: 'sandbox_image = "{{ registry_addr }}/pause:3.10"'
+      notify: Reiniciar containerd
+
+    - name: 5. Configurar endpoint de crictl para evitar warnings
+      ansible.builtin.copy:
+        dest: /etc/crictl.yaml
+        content: |
+          runtime-endpoint: unix:///run/containerd/containerd.sock
+          image-endpoint: unix:///run/containerd/containerd.sock
+          timeout: 10
+          debug: false
+        mode: "0644"
 
   handlers:
     - name: Reiniciar containerd

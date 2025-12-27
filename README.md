@@ -1,3 +1,50 @@
+# Local Registry
+```
+podman run -d -p 5000:5000 --restart=always --name registry registry:2
+
+
+cat /etc/containers/registries.conf
+# Formato V2 Unificado
+unqualified-search-registries = ["docker.io", "quay.io"]
+
+[[registry]]
+location = "192.168.0.130:5000"
+insecure = true
+```
+
+```
+podman pull alpine
+podman tag docker.io/library/alpine 192.168.0.130:5000/mi-alpine-local
+podman push 192.168.0.130:5000/mi-alpine-local
+```
+
+## Cargar imagenes
+```
+IMAGES=(
+  "registry.k8s.io/kube-apiserver:v1.31.14"
+  "registry.k8s.io/kube-controller-manager:v1.31.14"
+  "registry.k8s.io/kube-scheduler:v1.31.14"
+  "registry.k8s.io/kube-proxy:v1.31.14"
+  "registry.k8s.io/etcd:3.5.24-0"
+  "registry.k8s.io/pause:3.10"
+  "registry.k8s.io/pause:3.8"
+  "ghcr.io/flannel-io/flannel:v0.27.4"
+  "ghcr.io/flannel-io/flannel-cni-plugin:v1.8.0-flannel1"
+  "registry.k8s.io/coredns/coredns:v1.11.3"
+  "registry.k8s.io/metrics-server/metrics-server:v0.8.0"
+)
+
+REGISTRY="192.168.0.130:5000"
+
+for img in "${IMAGES[@]}"; do
+  NEW_IMG=$(echo "$img" | sed 's|registry.k8s.io|192.168.0.130:5000|g; s|ghcr.io|192.168.0.130:5000|g')
+  podman pull $img
+  podman tag $img $NEW_IMG
+  podman push $NEW_IMG
+done
+```
+
+
 # Install k8s in vm
 
 ## Image ubuntu.img, keys....
@@ -29,6 +76,7 @@ pip install ansible
 ```
 ansible-playbook playbook/update.yaml
 ansible-playbook playbook/k8s.yaml
+ansible-playbook playbook/local.yaml
 ```
 
 ## Start manager
@@ -41,17 +89,23 @@ ansible-playbook playbook/k8s.yaml
 kubeadm init --pod-network-cidr=10.244.0.0/16
 
 mkdir -p $HOME/.kube
-sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config
+cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+chown $(id -u):$(id -g) $HOME/.kube/config
+
+kubectl get pods -A
+
 ```
 
 Copy: kubeadm join.....
 
+
+	
 ## Start workers
 ```
-./ssh.sh node02 kubeadm join 192.168.122.224:6443 --token ux4c4s.24tl7qv4ewp2hxk2 --discovery-token-ca-cert-hash sha256:4443722b9f9958f0c3e834f8c83bd27a84f5ffdbbb5013a13f96cbb88ba160bb
-./ssh.sh node03 kubeadm join 192.168.122.224:6443 --token ux4c4s.24tl7qv4ewp2hxk2 --discovery-token-ca-cert-hash sha256:4443722b9f9958f0c3e834f8c83bd27a84f5ffdbbb5013a13f96cbb88ba160bb
-./ssh.sh node04 kubeadm join 192.168.122.224:6443 --token ux4c4s.24tl7qv4ewp2hxk2 --discovery-token-ca-cert-hash sha256:4443722b9f9958f0c3e834f8c83bd27a84f5ffdbbb5013a13f96cbb88ba160bb
+JOIN='kubeadm join 192.168.122.159:6443 --token i5vcnw.7hxt4uw6ny9qamgk --discovery-token-ca-cert-hash sha256:3d185d8f110821a7c7cfaa53d1e12f09048275b4a06e930b5c1006b591178a97'
+./ssh.sh node02 $JOIN
+./ssh.sh node03 $JOIN
+./ssh.sh node04 $JOIN
 ```
 
 ## Preparing k8s
@@ -68,87 +122,37 @@ kubectl get pods -A
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 kubectl patch deployment metrics-server -n kube-system --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--kubelet-insecure-tls"}]'
 
+kubectl get pods -A
+
 kubectl top nodes
 
 ```
 
 ## Hello, World
+### install local registry
+podman pull k8s.gcr.io/echoserver:1.10
+podman tag k8s.gcr.io/echoserver:1.10 192.168.0.130:5000/echoserver:1.10
+podman push 192.168.0.130:5000/echoserver:1.10
+
 ```
-kubectl create deployment hola-k8s --image=k8s.gcr.io/echoserver:1.10
+kubectl create deployment hola-k8s --image=192.168.0.130:5000/echoserver:1.10
 kubectl expose deployment hola-k8s --type=NodePort --port=8080
 
 kubectl get pods
 kubectl get svc hola-k8s
 ```
-
+Copy de port: 3xxxx
 
 Host node
 ```
-curl node01:30460
-curl node02:30460
-curl node03:30460
-curl node04:30460
-```
-
-```
-kubectl delete service hola-k8s
-kubectl delete deployment hola-k8s
-```
-
-# Local Registry
-```
-podman run -d -p 5000:5000 --restart=always --name registry registry:2
-
-
-cat /etc/containers/registries.conf
-# Formato V2 Unificado
-unqualified-search-registries = ["docker.io", "quay.io"]
-
-[[registry]]
-location = "192.168.0.130:5000"
-insecure = true
-```
-
-```
-podman pull alpine
-podman tag docker.io/library/alpine 192.168.0.130:5000/mi-alpine-local
-podman push 192.168.0.130:5000/mi-alpine-local
-```
-
-
-
-
-
-## Set containerd to local registry
-
-```
-ansible-playbook playbook/local.yaml
-```
-
-### Test local registry
-```
-./ssh.sh node01 crictl pull 192.168.0.130:5000/mi-alpine-local
-./ssh.sh node02 crictl pull 192.168.0.130:5000/mi-alpine-local
-./ssh.sh node03 crictl pull 192.168.0.130:5000/mi-alpine-local
-./ssh.sh node04 crictl pull 192.168.0.130:5000/mi-alpine-local
-
-
-./ssh.sh node01 crictl images
-./ssh.sh node02 crictl images
-./ssh.sh node03 crictl images
-./ssh.sh node04 crictl images
-```
-
-### Test local registry in k8s
-```
-kubectl run prueba-local --image=192.168.0.130:5000/mi-alpine-local -- /bin/sh -c "while true; do echo 'Hola desde el registro local'; sleep 30; done"
-
-kubectl logs prueba-local
+curl node01:31852
+curl node02:31852
+curl node03:31852
+curl node04:31852
 ```
 
 ### Clean tests
 ```
-kubectl delete pod prueba-local
 kubectl delete deployment hola-k8s
 kubectl delete svc hola-k8s
 ```
