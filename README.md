@@ -1,17 +1,19 @@
 # Local Registry
+## Install
 ```
-podman run -d -p 5000:5000 --restart=always --name registry registry:2
-
-
-cat /etc/containers/registries.conf
+cat <<EOF | sudo tee /etc/containers/registries.conf
 # Formato V2 Unificado
 unqualified-search-registries = ["docker.io", "quay.io"]
 
 [[registry]]
 location = "192.168.0.130:5000"
 insecure = true
+EOF
+
+podman run -d -p 5000:5000 --restart=always --name registry registry:2
 ```
 
+### Test
 ```
 podman pull alpine
 podman tag docker.io/library/alpine 192.168.0.130:5000/mi-alpine-local
