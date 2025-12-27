@@ -1,0 +1,3 @@
+NODES="node01 node02 node03 node04"
+MEM="8192"
+CPU="6"

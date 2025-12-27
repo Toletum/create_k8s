@@ -1,0 +1,13 @@
+---
+- name: Actualizar y mejorar paquetes en todos los nodos
+  hosts: all
+  become: yes # Ejecuta como root (sudo)
+
+  tasks:
+    - name: Reiniciar el nodo si es necesario
+      ansible.builtin.reboot:
+        msg: "Reinicio provocado por actualización de paquetes vía Ansible"
+        connect_timeout: 5
+        reboot_timeout: 300
+        pre_reboot_delay: 0
+        post_reboot_delay: 30
