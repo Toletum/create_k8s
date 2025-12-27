@@ -1,14 +1,15 @@
 # Install k8s in vm
 
 ## Create nodes
+```
 ./vm.sh node01
 ./vm.sh node02
 ./vm.sh node03
 ./vm.sh node04
+```
 
 
 ## Install ansible
-
 ```
 python3 -m venv --system-site-packages venv
 source venv/bin/activate
