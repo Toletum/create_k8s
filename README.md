@@ -146,7 +146,7 @@ kubectl get svc hola-k8s
 ```
 Copy de port: 3xxxx
 
-Host node
+### curl
 ```
 curl node01:31852
 curl node02:31852
