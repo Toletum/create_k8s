@@ -48,6 +48,19 @@ done
 
 
 # Install k8s in vm
+## edit config
+```bash
+vi config
+```
+
+add in /etc/hosts, current config
+
+```
+192.168.122.30 node01
+192.168.122.31 node02
+192.168.122.32 node03
+192.168.122.33 node04
+```
 
 ## Image ubuntu.img, keys....
 

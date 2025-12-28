@@ -1,24 +1,15 @@
 #!/bin/bash
 
-NODES=$(grep -v "^#" inventory.ini | awk '/^\[nodes\]/{f=1; next} /^\[/{f=0} f')
+source config
 
-for NODE in ${NODES}; do
-    echo "Creando snapshot para: $NODE..."
+./stop.sh
 
-    STATUS=$(virsh domstate "$NODE")
-    if [ "$STATUS" = "running" ]; then
-        echo "Apagando $NODE de forma segura..."
-        virsh shutdown "$NODE"
-
-        # Esperar a que se apague realmente
-        while [ "$(virsh domstate "$NODE")" != "shut off" ]; do
-            sleep 2
-        done
-    fi
-
+echo "Snapshot nodes..."
+for line in $NODES; do
+    NODE=$(echo $line | cut -d';' -f1)
     virsh snapshot-create-as --domain "$NODE" \
-    --name "pre_k8s_$(date +%F_%H-%M)" \
-    --description "Antes de instalar Kubernetes" \
+    --name "$(date +%F_%H-%M-%S)" \
+    --description "snapshot" \
     --disk-only \
     --atomic
 done

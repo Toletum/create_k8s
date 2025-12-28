@@ -4,9 +4,15 @@ source config
 source colors
 
 NODE="$1"
+FIXED_IP="$2"
 
 if [ "$NODE" == "" ]; then
   echo "NODE?"
+  exit 1
+fi
+
+if [ "$FIXED_IP" == "" ]; then
+  echo "FIXED_IP? virsh net-dumpxml default"
   exit 1
 fi
 
@@ -33,12 +39,25 @@ users:
       - ${KEYSPUB}
 
 disable_root: false
-
 EOF
 
-cloud-localds data/cloud-init-${NODE}.iso data/user-data-${NODE} data/meta-data-${NODE}
+cat <<EOF > data/network-config-${NODE}
+version: 2
+ethernets:
+  ens2:
+    dhcp4: false
+    addresses:
+      - ${FIXED_IP}/24
+    nameservers:
+      addresses: [8.8.8.8, 1.1.1.1]
+    routes:
+      - to: default
+        via: 192.168.122.1
+EOF
 
-rm -f data/user-data-${NODE} data/meta-data-${NODE}
+cloud-localds -N data/network-config-${NODE} data/cloud-init-${NODE}.iso data/user-data-${NODE} data/meta-data-${NODE}
+
+rm -f data/user-data-${NODE} data/meta-data-${NODE} data/network-config-${NODE}
 rm -f data/node_${NODE}.txt
 
 touch data/node_${NODE}.txt
@@ -58,18 +77,11 @@ chmod 664 data/node_${NODE}.txt data/${NODE}.qcow2
   --graphics none \
   --console file,path=/home/toletum/k8s/data/node_${NODE}.txt,target_type=serial > data/${NODE}-VM.txt 2>&1
 
-while true;
-do
-  echo "Waiting IP for ${NODE}..."
-  ip=$(getIP "$NODE")
-  if [ "$ip" != "" ]; then
-    break
-  fi
-  sleep 5
+ssh-keygen -f "${HOME}/.ssh/known_hosts" -R ${FIXED_IP} > /dev/null 2>&1
+
+
+until ssh -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i data/keys root@${FIXED_IP} "cloud-init status --wait" > /dev/null 2>&1; do
+    sleep 2
 done
 
-ssh-keygen -f "${HOME}/.ssh/known_hosts" -R ${ip} > /dev/null 2>&1
-
-echo "${NODE}: ${ip} OK"
-
-sudo sed -i "/${NODE}$/c\\$ip ${NODE}" /etc/hosts
+echo "${NODE}: ${FIXED_IP} OK"
