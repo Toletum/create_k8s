@@ -117,7 +117,7 @@ Copy: kubeadm join.....
 	
 ## Start workers
 ```bash
-JOIN='kubeadm join 192.168.122.30:6443 --token p1wkty.jl4dkmj9md5ktbuw --discovery-token-ca-cert-hash sha256:004607331ba391a9cc62203f246b08aa5a1af4954f0a587b80961635a0b55990'
+JOIN='kubeadm join 192.168.122.30:6443 --token b75z6v.kpbk3vai5dc89xdx --discovery-token-ca-cert-hash sha256:af9ba6be36e6cd2a22316f34f05db689cf581f780879af3d502c5704c60de1f0'
 ./ssh.sh node02 $JOIN
 ./ssh.sh node03 $JOIN
 ./ssh.sh node04 $JOIN
@@ -130,12 +130,9 @@ JOIN='kubeadm join 192.168.122.30:6443 --token p1wkty.jl4dkmj9md5ktbuw --discove
 
 ```bash
 kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
-kubectl get nodes
-
-kubectl get pods -A
-
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 kubectl patch deployment metrics-server -n kube-system --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--kubelet-insecure-tls"}]'
+
 
 kubectl get pods -A
 

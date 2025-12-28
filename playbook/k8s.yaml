@@ -10,22 +10,46 @@
         sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
       tags: task1
 
-    - name: 2. Cargar módulos del kernel necesarios
-      shell: |
-        modprobe overlay
-        modprobe br_netfilter
-      # Esto asegura que los sysctl del paso siguiente no den "Invalid argument"
+    - name: 2. Cargar módulos en la sesión actual
+      community.general.modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - overlay
+        - br_netfilter
       tags: task2
 
-    - name: 3. Configurar red del Kernel (sysctl)
-      ansible.posix.sysctl:
-        name: "{{ item.name }}"
-        value: "{{ item.value }}"
+    - name: 2.1. Configurar carga de módulos overlay y br_netfilter al arranque
+      ansible.builtin.copy:
+        dest: /etc/modules-load.d/k8s.conf
+        content: |
+          overlay
+          br_netfilter
+        mode: "0644"
+      tags: task2
+
+    - name: 3.1. net.bridge.bridge-nf-call-iptables
+      ansible.builtin.sysctl:
+        name: net.bridge.bridge-nf-call-iptables
+        value: 1
         state: present
         reload: yes
-      loop:
-        - { name: "net.ipv4.ip_forward", value: "1" }
-        - { name: "net.bridge.bridge-nf-call-iptables", value: "1" }
+      tags: task3
+
+    - name: 3.2. net.bridge.bridge-nf-call-ip6tables
+      ansible.builtin.sysctl:
+        name: net.bridge.bridge-nf-call-ip6tables
+        value: 1
+        state: present
+        reload: yes
+      tags: task3
+
+    - name: 3.3. net.ipv4.ip_forward
+      ansible.builtin.sysctl:
+        name: net.ipv4.ip_forward
+        value: 1
+        state: present
+        reload: yes
       tags: task3
 
     - name: 4. Instalar dependencias de sistema y herramientas
