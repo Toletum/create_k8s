@@ -1,14 +1,11 @@
 #!/bin/bash
 
-source config
+NODES=$(awk '/\[nodes\]/{flag=1;next} /\[.*\]/{flag=0} flag && NF' inventory.ini)
 
 MSG="$*"
 
-./stop.sh
-
 echo "Snapshot nodes..."
-for line in $NODES; do
-    NODE=$(echo $line | cut -d';' -f1)
+for NODE in $NODES; do
     virsh snapshot-create-as --domain "$NODE" \
     --name "$(date +%F_%H-%M-%S)" \
     --description "snapshot: $MSG" \

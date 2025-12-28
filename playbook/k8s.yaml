@@ -1,6 +1,6 @@
 ---
 - name: Preparar nodos para Kubernetes
-  hosts: all
+  hosts: nodes
   become: yes
   any_errors_fatal: true
   tasks:

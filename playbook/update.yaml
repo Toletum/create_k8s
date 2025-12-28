@@ -1,6 +1,6 @@
 ---
 - name: Actualizar y mejorar paquetes en todos los nodos
-  hosts: all
+  hosts: nodes
   become: yes # Ejecuta como root (sudo)
 
   tasks:

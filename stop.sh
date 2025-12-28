@@ -1,19 +1,15 @@
 #!/bin/bash
 
-source config
+NODES=$(awk '/\[nodes\]/{flag=1;next} /\[.*\]/{flag=0} flag && NF' inventory.ini)
 
 echo "Shutdown nodes..."
-for line in $NODES; do
-    NODE=$(echo $line | cut -d';' -f1)
-    ip=$(echo $line | cut -d';' -f2)
+for NODE in $NODES; do
     ./ssh.sh $NODE shutdown -h now
 done
 
 
 echo "Waiting for nodes..."
-for line in $NODES; do
-    NODE=$(echo $line | cut -d';' -f1)
-    status=$(virsh domstate "$NODE")
+for NODE in $NODES; do
     while [ "$(virsh domstate "$NODE")" != "shut off" ]; do
         sleep 2
     done

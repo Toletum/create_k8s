@@ -1,17 +1,15 @@
 #!/bin/bash
 
-source config
+NODES=$(awk '/\[nodes\]/{flag=1;next} /\[.*\]/{flag=0} flag && NF' inventory.ini)
 
 
-for line in $NODES; do
-    node=$(echo $line | cut -d';' -f1)
-    ip=$(echo $line | cut -d';' -f2)
+for node in $NODES; do
     if virsh list --all | grep -q "\<$node\>"; then
             echo "El nodo '$node' ya existe/está listo."
             continue
     fi
     {
-      echo "$node:$ip"
-      ./vm.sh $node $ip
+      echo "$node"
+      ./vm.sh $node
     }&
 done && wait

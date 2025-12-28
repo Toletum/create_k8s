@@ -1,19 +1,16 @@
 #!/bin/bash
 
-source config
+NODES=$(awk '/\[nodes\]/{flag=1;next} /\[.*\]/{flag=0} flag && NF' inventory.ini)
 
 echo "Starting vm's..."
-for line in $NODES; do
-    NODE=$(echo $line | cut -d';' -f1)
+for NODE in $NODES; do
     virsh start "$NODE"
 done
 
 
 echo "Waiting for linux to start..."
-for line in $NODES; do
-    NODE=$(echo $line | cut -d';' -f1)
-    ip=$(echo $line | cut -d';' -f2)
-    until ssh -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i data/keys root@${ip} "uptime" > /dev/null 2>&1; do
+for NODE in $NODES; do
+    until ssh -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i data/keys root@${NODE} "uptime" > /dev/null 2>&1; do
         sleep 2
     done
     echo "$NODE is up & running"

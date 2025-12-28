@@ -89,6 +89,7 @@ pip install ansible
 
 ## Install k8s
 ```bash
+ansible-playbook playbook/hosts.yaml
 ansible-playbook playbook/update.yaml
 ansible-playbook playbook/k8s.yaml
 ansible-playbook playbook/local.yaml

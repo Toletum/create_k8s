@@ -1,6 +1,6 @@
 ---
 - name: Configurar Containerd para Registro Local
-  hosts: all
+  hosts: nodes
   become: yes
   vars:
     registry_addr: "192.168.0.130:5000"

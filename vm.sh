@@ -4,20 +4,21 @@ source config
 source colors
 
 NODE="$1"
-FIXED_IP="$2"
 
 if [ "$NODE" == "" ]; then
   echo "NODE?"
   exit 1
 fi
 
-if [ "$FIXED_IP" == "" ]; then
-  echo "FIXED_IP? virsh net-dumpxml default"
+if [ ! -f data/TEMPLATE.qcow2 ]; then
+  echo "TEMPLATE.qcow2?"
   exit 1
 fi
 
-if [ ! -f data/TEMPLATE.qcow2 ]; then
-  echo "TEMPLATE.qcow2?"
+IP=$(nslookup ${NODE} | awk '/^Address: / { addr=$2 } END { print addr }')
+
+if [ "$IP" == "" ]; then
+  echo "IP? ${NODE} in /etc/hosts"
   exit 1
 fi
 
@@ -47,7 +48,7 @@ ethernets:
   ens2:
     dhcp4: false
     addresses:
-      - ${FIXED_IP}/24
+      - ${IP}/24
     nameservers:
       addresses: [8.8.8.8, 1.1.1.1]
     routes:
@@ -77,11 +78,11 @@ chmod 664 data/node_${NODE}.txt data/${NODE}.qcow2
   --graphics none \
   --console file,path=/home/toletum/k8s/data/node_${NODE}.txt,target_type=serial > data/${NODE}-VM.txt 2>&1
 
-ssh-keygen -f "${HOME}/.ssh/known_hosts" -R ${FIXED_IP} > /dev/null 2>&1
+ssh-keygen -f "${HOME}/.ssh/known_hosts" -R ${NODE} > /dev/null 2>&1
 
 
-until ssh -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i data/keys root@${FIXED_IP} "cloud-init status --wait" > /dev/null 2>&1; do
+until ssh -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i data/keys root@${NODE} "cloud-init status --wait" > /dev/null 2>&1; do
     sleep 2
 done
 
-echo "${NODE}: ${FIXED_IP} OK"
+echo "${NODE}: ${IP} OK"

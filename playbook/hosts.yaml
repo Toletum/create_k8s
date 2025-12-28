@@ -1,0 +1,22 @@
+- name: Leer /etc/hosts local
+  hosts: localhost
+  gather_facts: no
+  become: no
+  tasks:
+    - slurp:
+        src: /etc/hosts
+      register: hosts_local
+
+- name: Sincronizar /etc/hosts en nodos
+  hosts: nodes
+  become: yes
+  tasks:
+    - lineinfile:
+        path: /etc/hosts
+        regexp: ".*\\s{{ inventory_hostname }}$"
+        line: "{{ (hostvars['localhost'].hosts_local.content | b64decode)
+          .splitlines()
+          | select('search', inventory_hostname)
+          | first }}"
+        state: present
+        backup: yes
