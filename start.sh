@@ -16,4 +16,5 @@ for line in $NODES; do
     until ssh -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i data/keys root@${ip} "uptime" > /dev/null 2>&1; do
         sleep 2
     done
+    echo "$NODE is up & running"
 done
