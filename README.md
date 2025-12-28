@@ -116,7 +116,7 @@ Copy: kubeadm join.....
 	
 ## Start workers
 ```bash
-JOIN='kubeadm join 192.168.122.159:6443 --token i5vcnw.7hxt4uw6ny9qamgk --discovery-token-ca-cert-hash sha256:3d185d8f110821a7c7cfaa53d1e12f09048275b4a06e930b5c1006b591178a97'
+JOIN='kubeadm join 192.168.122.30:6443 --token p1wkty.jl4dkmj9md5ktbuw --discovery-token-ca-cert-hash sha256:004607331ba391a9cc62203f246b08aa5a1af4954f0a587b80961635a0b55990'
 ./ssh.sh node02 $JOIN
 ./ssh.sh node03 $JOIN
 ./ssh.sh node04 $JOIN
