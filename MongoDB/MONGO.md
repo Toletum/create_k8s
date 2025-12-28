@@ -11,12 +11,12 @@ podman push 192.168.0.130:5000/mongo:8.0
 
 ## Playbook
 ```bash
-ansible-playbook playbook/mongo.yaml --tags copy
-ansible-playbook playbook/mongo.yaml --tags labels
-ansible-playbook playbook/mongo.yaml --tags keyfile
-ansible-playbook playbook/mongo.yaml --tags apply
-ansible-playbook playbook/mongo.yaml --tags rs
-ansible-playbook playbook/mongo.yaml --tags adminuser
+ansible-playbook mongo.yaml --tags copy
+ansible-playbook mongo.yaml --tags labels
+ansible-playbook mongo.yaml --tags keyfile
+ansible-playbook mongo.yaml --tags apply
+ansible-playbook mongo.yaml --tags rs
+ansible-playbook mongo.yaml --tags adminuser
 ```
 
 ## Test
