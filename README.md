@@ -93,6 +93,8 @@ pip install ansible
 ansible-playbook playbook/hosts.yaml
 ansible-playbook playbook/update.yaml
 ansible-playbook playbook/k8s.yaml
+
+# Check no Internet
 ansible-playbook playbook/local.yaml
 ```
 
@@ -135,7 +137,7 @@ Copy: kubeadm join.....
 	
 ## Start workers
 ```bash
-JOIN='kubeadm join 192.168.122.30:6443 --token b75z6v.kpbk3vai5dc89xdx --discovery-token-ca-cert-hash sha256:af9ba6be36e6cd2a22316f34f05db689cf581f780879af3d502c5704c60de1f0'
+JOIN='kubeadm join 192.168.122.30:6443 --token 3udxdz.uo692zscbw9334dj --discovery-token-ca-cert-hash sha256:ce8eb294d0e6ec46e28bfcae2973bfece3eeaecccf181d31d0ac0e9c51f507df'
 ./ssh.sh node02 $JOIN
 ./ssh.sh node03 $JOIN
 ./ssh.sh node04 $JOIN
