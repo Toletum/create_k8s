@@ -31,8 +31,10 @@
       loop:
         - registry.k8s.io
         - ghcr.io
+        - docker.io
+      tags: mirrors
 
-    - name: Configurar hosts.toml para el registro local
+    - name: Configurar mirrors
       copy:
         dest: "/etc/containerd/certs.d/{{ item }}/hosts.toml"
         content: |
@@ -44,7 +46,9 @@
       loop:
         - registry.k8s.io
         - ghcr.io
+        - docker.io
       notify: Reiniciar containerd
+      tags: mirrors
 
     - name: 3. Forzar el cambio de config_path en config.toml
       replace:

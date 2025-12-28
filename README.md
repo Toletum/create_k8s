@@ -87,12 +87,30 @@ pip install ansible
 ```
 
 
+
 ## Install k8s
 ```bash
 ansible-playbook playbook/hosts.yaml
 ansible-playbook playbook/update.yaml
 ansible-playbook playbook/k8s.yaml
 ansible-playbook playbook/local.yaml
+```
+
+## Disabled Intenet access
+```bash
+sudo iptables -L  FORWARD  --line-numbers
+
+# No internet access
+sudo iptables -I FORWARD -s node01 -j DROP
+sudo iptables -I FORWARD -s node02 -j DROP
+sudo iptables -I FORWARD -s node03 -j DROP
+sudo iptables -I FORWARD -s node04 -j DROP
+
+# Internet access
+sudo iptables -D FORWARD -s node01 -j DROP
+sudo iptables -D FORWARD -s node02 -j DROP
+sudo iptables -D FORWARD -s node03 -j DROP
+sudo iptables -D FORWARD -s node04 -j DROP
 ```
 
 ## Start manager
