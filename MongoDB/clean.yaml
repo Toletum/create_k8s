@@ -1,0 +1,30 @@
+- name: Delete MongoDB
+  hosts: node01
+  become: yes
+  tasks:
+    - name: Copiar archivo
+      ansible.builtin.copy:
+        src: /home/toletum/cluster/MongoDB/mongo-statefulset-host.yaml
+        dest: /root/mongo-statefulset-host.yaml
+        owner: root
+        group: root
+        mode: "0644"
+      tags: [copy]
+
+    - name: Delete StatefulSet
+      ansible.builtin.command: kubectl delete -f /root/mongo-statefulset-host.yaml
+      ignore_errors: yes
+      tags: [delete]
+
+    - name: Esperar a que los pods de mongo desaparezcan
+      ansible.builtin.command: kubectl wait --for=delete pod -l app=mongo --timeout=300s
+      tags: [delete]
+
+- name: Clean data
+  hosts: nodes
+  become: yes
+  tasks:
+    - name: Clean data
+      ansible.builtin.command: rm -rf /mnt/mongo-data
+      ignore_errors: yes
+      tags: [data]

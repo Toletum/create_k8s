@@ -87,5 +87,5 @@ spec:
             secretName: mongo-keyfile
         - name: data
           hostPath:
-            path: "/mnt/mongo-$(POD_ORDINAL)"
+            path: "/mnt/mongo-data"
             type: DirectoryOrCreate
