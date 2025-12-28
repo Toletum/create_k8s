@@ -1,2 +1,9 @@
 venv/
 data/
+
+*.tar.gz
+*.tgz
+*.gz
+*.log
+
+mongosh-2.5.1-linux-x64/

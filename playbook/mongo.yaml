@@ -1,0 +1,69 @@
+- name: Copiar fichero local al nodo
+  hosts: node01
+  become: yes
+  tasks:
+    - name: Copiar archivo
+      ansible.builtin.copy:
+        src: /home/toletum/cluster/k8s/mongo-statefulset-host.yaml
+        dest: /root/mongo-statefulset-host.yaml
+        owner: root
+        group: root
+        mode: "0644"
+      tags: [copy]
+
+    - name: Ejecutar comando kubectl
+      ansible.builtin.command: "{{ item }}"
+      register: kubectl_results
+      loop:
+        - "kubectl label nodes node02 app=mongo"
+        - "kubectl label nodes node03 app=mongo"
+        - "kubectl label nodes node04 app=mongo"
+      tags: [labels]
+
+    - name: Generar clave secreta
+      ansible.builtin.command: openssl rand -base64 756 | kubectl create secret generic mongo-keyfile --from-literal=keyfile="$(cat)"
+      register: kubectl_results
+      tags: [keyfile]
+
+    - name: mongo-statefulset
+      ansible.builtin.command: kubectl apply -f mongo-statefulset-host.yaml
+      register: kubectl_results
+      tags: [apply]
+
+    - name: Ejecutar rs.initiate en mongo-0
+      shell: >
+        kubectl exec -ti mongo-0 -c mongo -- mongosh --eval '
+        rs.initiate({
+          _id: "rs0",
+          members: [
+            { _id: 0, host: "node02:27017" },
+            { _id: 2, host: "node03:27017" },
+            { _id: 3, host: "node04:27017" }
+          ]
+        });'
+      register: rs_init
+      ignore_errors: yes
+      tags: [rs]
+
+    - name: Mostrar resultado
+      debug:
+        var: rs_init.stdout
+      tags: [rs]
+
+    - name: Admin user
+      shell: >
+        kubectl exec -ti mongo-0 -c mongo -- mongosh mongodb://127.0.0.1:27017/admin -eval '
+          db.createUser({
+            user: "admin",
+            pwd: "admin",  // Cambia esto por una contraseña segura
+            roles: [{ role: "root", db: "admin" }]
+            });
+            '
+      register: admin_user
+      ignore_errors: yes
+      tags: [adminuser]
+
+    - name: Mostrar resultado
+      debug:
+        var: admin_user.stdout
+      tags: [adminuser]
