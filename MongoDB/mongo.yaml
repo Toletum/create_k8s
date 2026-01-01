@@ -1,40 +1,10 @@
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: mongodb-headless
-  namespace: default
-spec:
-  clusterIP: None
-  selector:
-    app: mongodb
-  ports:
-    - port: 27017
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: mongodb-nodeport
-  namespace: default
-spec:
-  type: NodePort
-  selector:
-    app: mongodb
-  ports:
-    - name: mongodb
-      port: 27017      # Puerto interno del servicio
-      targetPort: 27017 # Puerto del contenedor
-      nodePort: 30017   # Puerto que abrirá en la IP de tus nodos (opcional, si no pones uno, K8s elige uno al azar)
-      
----
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: mongodb
   namespace: default
 spec:
-  serviceName: "mongodb-service"
+  serviceName: "mongodb-headless" # Debe coincidir con el nombre del servicio headless
   replicas: 1
   selector:
     matchLabels:
@@ -44,15 +14,14 @@ spec:
       labels:
         app: mongodb
     spec:
-      nodeSelector:
-        kubernetes.io/hostname: "node02"
       initContainers:
         - name: init-mongodb
           image: alpine:latest
           command:
             - sh
             - -c
-            - "rm -rf /data/db/* && chown 999:999 /data/db"
+            # Nota: chown es importante para que Mongo tenga permisos
+            - "chown -R 999:999 /data/db"
           volumeMounts:
             - name: data
               mountPath: /data/db      
@@ -61,26 +30,6 @@ spec:
         image: mongo:8.0
         ports:
         - containerPort: 27017
-        readinessProbe:
-          exec:
-            command:
-              - mongosh
-              - --eval
-              - "db.adminCommand('ping')"
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 5
-        livenessProbe:
-          exec:
-            command:
-              - mongosh
-              - --eval
-              - "db.adminCommand('ping')"
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
         env:
         - name: MONGO_INITDB_ROOT_USERNAME
           value: "admin"
@@ -89,8 +38,14 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /data/db
-      volumes:
-      - name: data
-        hostPath:
-          path: "/mnt/mongo-data"
-          type: DirectoryOrCreate
+  
+  # Aquí es donde ocurre la magia del Local Path Provisioner
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "local-path" # Asegúrate que este sea el nombre de tu SC
+      resources:
+        requests:
+          storage: 5Gi
