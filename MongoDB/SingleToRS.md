@@ -33,15 +33,21 @@ kubectl apply -f mongo-migration.yaml
 ```
 
 
-kubectl exec -i mongodb-0 -c mongodb -- mongosh -u admin -p 123456 --eval '
-        rs.initiate({
-          _id: "rs0",
-          members: [
-            { _id: 0, host: "192.168.122.31:27017" },
-            { _id: 1, host: "192.168.122.32:27017" },
-            { _id: 2, host: "192.168.122.33:27017" }
-          ]
-        });'
+kubectl exec -i mongodb-0 -c mongodb -- mongosh -u admin -p 123456
+rs.initiate({
+        _id: "rs0",
+        members: [
+                { _id: 0, host: "192.168.122.31:27017" },
+                { _id: 1, host: "192.168.122.32:27017" },
+                { _id: 2, host: "192.168.122.33:27017" }
+        ]
+});
+
+
+rs.status().members.forEach(function(m) {
+        let lag = (m.optimeDate - rs.status().members.find(p => p.state === 1).optimeDate) / 1000;
+        print(m.name + " [" + m.stateStr + "] Lag: " + lag + "s");
+})
 
 
 
