@@ -47,4 +47,8 @@ kubectl exec -i mongodb-0 -c mongodb -- mongosh -u admin -p 123456 --eval '
 
 ./mongosh-2.5.1-linux-x64/bin/mongosh --host node04 --port 27017 -u admin -p 123456 --authenticationDatabase admin
 
+use olddata;
+db.myCol.find()
+
+
 ```
