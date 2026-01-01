@@ -46,7 +46,8 @@ spec:
       labels:
         app: mongodb
     spec:
-      # hostNetwork y dnsPolicy eliminados a menos que sean estrictamente necesarios
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       initContainers:
         - name: init-mongodb
           image: alpine:latest
