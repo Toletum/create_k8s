@@ -7,7 +7,7 @@ ansible-playbook mongo.yaml
 ## Test
 ### node01
 ```bash
-kubectl exec -it mongo-1 -c mongo -- mongosh 'mongodb://admin:admin@node02:27017/?directConnection=false&appName=mongosh+2.5.0&readPreference=primary'
+kubectl exec -it mongodb-0 -c mongo -- mongosh 'mongodb://admin:123456@localhost:27017/?directConnection=true'
 ```
 
 ### Local
@@ -19,3 +19,4 @@ tar xf mongosh-2.5.1-linux-x64.tgz
 
 ./mongosh-2.5.1-linux-x64/bin/mongosh "mongodb://admin:admin@node03:27017/?directConnection=true"
 ```
+
