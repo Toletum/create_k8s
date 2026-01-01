@@ -17,3 +17,23 @@ kubectl delete pod mongodb-0
 ./mongosh-2.5.1-linux-x64/bin/mongosh --host node03 --port 27017 -u admin -p 123456 --authenticationDatabase admin
 
 ```
+
+
+```
+
+
+kubectl exec -i mongodb-0 -c mongodb -- mongosh -u admin -p 123456 --eval '
+        rs.initiate({
+          _id: "rs0",
+          members: [
+            { _id: 0, host: "192.168.122.31:27017" },
+            { _id: 1, host: "192.168.122.32:27017" },
+            { _id: 2, host: "192.168.122.33:27017" }
+          ]
+        });'
+
+
+
+./mongosh-2.5.1-linux-x64/bin/mongosh --host node04 --port 27017 -u admin -p 123456 --authenticationDatabase admin
+
+```
