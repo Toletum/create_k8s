@@ -4,8 +4,8 @@
   tasks:
     - name: Copiar archivo
       ansible.builtin.copy:
-        src: /home/toletum/cluster/MongoDB/mongo-statefulset-host.yaml
-        dest: /root/mongo-statefulset-host.yaml
+        src: /home/toletum/cluster/MongoDB/mongo.yaml
+        dest: /root/mongo.yaml
         owner: root
         group: root
         mode: "0644"
@@ -20,76 +20,6 @@
         - node04
       tags: [labels]
 
-    - name: Generar secreto para MongoDB
-      shell: |
-        key=$(openssl rand -base64 756)
-        kubectl create secret generic mongo-keyfile --from-literal=keyfile="$key" --dry-run=client -o yaml | kubectl apply -f -
-      tags: [keyfile]
-
-    - name: Aplicar StatefulSet
-      ansible.builtin.command: kubectl apply -f /root/mongo-statefulset-host.yaml
+    - name: Aplicar StatefulSet 1
+      ansible.builtin.command: kubectl apply -f /root/mongo.yaml
       tags: [apply]
-
-    - name: Esperar a que haya 3 pods mongo running
-      shell: |
-        count=0
-        for i in {1..30}; do
-          ready=$(kubectl get pods -l app=mongo -o jsonpath='{.items[*].status.containerStatuses[*].ready}' | grep -o true | wc -l)
-          if [ "$ready" -eq 3 ]; then
-            exit 0
-          fi
-          sleep 10
-        done
-        echo "Timeout esperando 3 pods mongo ready"
-        exit 1
-      register: wait_mongo
-      failed_when: wait_mongo.rc != 0
-      tags: [wait]
-
-    - name: Mostrar resultado admin
-      debug:
-        var: wait_mongo.stdout
-      tags: [wait]
-
-    - name: Iniciar replica set
-      shell: |
-        kubectl exec -i mongo-0 -c mongo -- mongosh --eval '
-        rs.initiate({
-          _id: "rs0",
-          members: [
-            { _id: 0, host: "node02:27017" },
-            { _id: 1, host: "node03:27017" },
-            { _id: 2, host: "node04:27017" }
-          ]
-        });'
-      register: rs_init
-      ignore_errors: yes
-      tags: [rs]
-
-    - name: Mostrar resultado rs
-      debug:
-        var: rs_init.stdout
-      tags: [rs]
-
-    - name: RS status
-      ansible.builtin.fail:
-        msg: "Error: rs.initiate no devolvió { ok: 1 }, revisar pods y configuración"
-      when: "rs_init.stdout.strip() != '{ ok: 1 }'"
-      tags: [rs]
-
-    - name: Crear usuario admin
-      shell: |
-        kubectl exec -i mongo-0 -c mongo -- mongosh mongodb://127.0.0.1:27017/admin --eval '
-        db.createUser({
-          user: "admin",
-          pwd: "admin",
-          roles: [{ role: "root", db: "admin" }]
-        });'
-      register: admin_user
-      ignore_errors: yes
-      tags: [adminuser]
-
-    - name: Mostrar resultado admin
-      debug:
-        var: admin_user.stdout
-      tags: [adminuser]
