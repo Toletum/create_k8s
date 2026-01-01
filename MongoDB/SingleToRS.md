@@ -45,9 +45,9 @@ rs.initiate({
 
 
 rs.status().members.forEach(function(m) {
-        let lag = (m.optimeDate - rs.status().members.find(p => p.state === 1).optimeDate) / 1000;
+        let lag = (m.optimeDate - rs.status().members.find(p => p.state === 1).optimeDate);
         print(m.name + " [" + m.stateStr + "] Lag: " + lag + "s");
-})
+});
 
 
 
