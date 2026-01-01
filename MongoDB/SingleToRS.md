@@ -4,7 +4,8 @@
 kubectl apply -f mongo.yaml
 
 kubectl exec -ti mongodb-0 -c mongodb -- mongosh  -u admin -p 123456 --eval '
-use olddata;
+use olddata
+
 db.createCollection("myCol");
 db.myCol.insertOne({a:'1'});
 db.myCol.find();
