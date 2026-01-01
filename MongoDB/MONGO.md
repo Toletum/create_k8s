@@ -15,8 +15,7 @@ kubectl exec -it mongodb-0 -c mongo -- mongosh 'mongodb://admin:123456@localhost
 wget https://downloads.mongodb.com/compass/mongosh-2.5.1-linux-x64.tgz
 tar xf mongosh-2.5.1-linux-x64.tgz
 
-./mongosh-2.5.1-linux-x64/bin/mongosh 'mongodb://admin:admin@node02,node03,node04/?replicaSet=rs0&readPreference=secondary'
-
-./mongosh-2.5.1-linux-x64/bin/mongosh "mongodb://admin:admin@node03:27017/?directConnection=true"
+./mongosh-2.5.1-linux-x64/bin/mongosh "mongodb://admin:admin@123456:30017/?directConnection=true"
 ```
+
 
