@@ -46,6 +46,16 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: "node02"
+      initContainers:
+        - name: init-mongodb
+          image: alpine:latest
+          command:
+            - sh
+            - -c
+            - "rm -rf /data/db/* && chown 999:999 /data/db"
+          volumeMounts:
+            - name: data
+              mountPath: /data/db      
       containers:
       - name: mongodb
         image: mongo:8.0
