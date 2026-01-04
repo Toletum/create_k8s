@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: haproxy-ds
+spec:
+  selector:
+    matchLabels:
+      app: haproxy
+  template:
+    metadata:
+      labels:
+        app: haproxy
+    spec:
+      # ESTO ES LO MÁS IMPORTANTE:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: haproxy
+        image: docker.io/library/haproxy:alpine
+        ports:
+        - containerPort: 8080
+          hostPort: 8080
+        volumeMounts:
+        - name: config
+          mountPath: /usr/local/etc/haproxy/haproxy.cfg
+          subPath: haproxy.cfg
+      volumes:
+      - name: config
+        configMap:
+          name: haproxy-config

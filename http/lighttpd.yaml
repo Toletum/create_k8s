@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lighttpd-deployment
+  labels:
+    app: lighttpd
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: lighttpd
+  template:
+    metadata:
+      labels:
+        app: lighttpd
+    spec:
+      containers:
+      - name: lighttpd
+        image: docker.io/gists/lighttpd:latest
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "50m"
+          limits:
+            memory: "64Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lighttpd-service
+spec:
+  selector:
+    app: lighttpd
+  ports:
+    - protocol: TCP
+      port: 80        # Puerto del servicio
+      targetPort: 80  # Puerto del contenedor
+  type: ClusterIP     
