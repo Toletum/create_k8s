@@ -1,7 +1,6 @@
 #!/bin/bash
 
 source config
-source colors
 
 NODE="$1"
 
