@@ -1,22 +1,22 @@
-- name: Leer /etc/hosts local
-  hosts: localhost
-  gather_facts: no
-  become: no
-  tasks:
-    - slurp:
-        src: /etc/hosts
-      register: hosts_local
-
-- name: Sincronizar /etc/hosts en nodos
+---
+- name: Mapeo limpio de IP y Nombre
   hosts: nodes
-  become: yes
+  gather_facts: no
   tasks:
-    - lineinfile:
+    - name: Ejecutar nslookup y filtrar solo la IP
+      # Usamos awk para extraer la línea que empieza por 'Address' (excluyendo el puerto/servidor DNS)
+      shell: "nslookup {{ item }} | grep -A 1 'Name:' | grep 'Address:' | awk '{print $2}'"
+      delegate_to: localhost
+      run_once: true
+      loop: "{{ groups['nodes'] }}"
+      register: nslookup_results
+
+    - name: Añadir los nodos al archivo hosts real
+      become: yes
+      blockinfile:
         path: /etc/hosts
-        regexp: ".*\\s{{ inventory_hostname }}$"
-        line: "{{ (hostvars['localhost'].hosts_local.content | b64decode)
-          .splitlines()
-          | select('search', inventory_hostname)
-          | first }}"
-        state: present
-        backup: yes
+        block: |
+          {% for r in hostvars[groups['nodes'][0]]['nslookup_results']['results'] %}
+          {{ r.stdout }} {{ r.item }}
+          {% endfor %}
+        marker: "# {mark} ANSIBLE MANAGED NODES"
