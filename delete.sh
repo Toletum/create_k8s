@@ -3,7 +3,6 @@
 NODES=$(awk '/\[nodes\]/{flag=1;next} /\[.*\]/{flag=0} flag && NF' inventory.ini)
 
 
-NODES="node04"
 for node in ${NODES}; do
   echo "Deleting $node"
     for ss in $(virsh snapshot-list $node --name); do
