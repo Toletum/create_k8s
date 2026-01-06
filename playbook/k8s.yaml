@@ -54,7 +54,7 @@
 
     - name: 4. Instalar dependencias de sistema y herramientas
       apt:
-        name: [apt-transport-https, ca-certificates, curl, gpg, vim]
+        name: [apt-transport-https, ca-certificates, curl, gpg, vim, nfs-common]
         state: present
         update_cache: yes
       tags: task4
