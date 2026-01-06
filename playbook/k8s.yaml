@@ -54,19 +54,11 @@
 
     - name: 4. Instalar dependencias de sistema y herramientas
       apt:
-        name: [apt-transport-https, ca-certificates, curl, gpg, vim, nfs-common, open-iscsi]
+        name: [apt-transport-https, ca-certificates, curl, gpg, vim]
         state: present
         update_cache: yes
       tags: task4
       
-    - name: 4.1 Habilitar y arrancar el servicio iscsid
-      ansible.builtin.systemd:
-        name: iscsid
-        enabled: yes
-        state: started
-        masked: no
-      tags: task4
-
     - name: 5. Añadir Repositorio oficial de Kubernetes
       shell: |
         mkdir -p /etc/apt/keyrings
