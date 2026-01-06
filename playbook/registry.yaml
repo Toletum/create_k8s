@@ -1,0 +1,48 @@
+---
+- name: Configurar Containerd para Registro Local
+  hosts: nodes
+  become: yes
+  vars:
+    registry_addr: "192.168.0.130:5000"
+    certs_dir: "/etc/containerd/certs.d"
+
+  tasks:
+    - name: 1. Crear directorio para los certificados del registro
+      ansible.builtin.file:
+        path: "{{ certs_dir }}/{{ registry_addr }}"
+        state: directory
+        mode: "0755"
+
+    - name: 2. Crear archivo hosts.toml para el registro local
+      ansible.builtin.copy:
+        dest: "{{ certs_dir }}/{{ registry_addr }}/hosts.toml"
+        content: |
+          server = "http://{{ registry_addr }}"
+
+          [host."http://{{ registry_addr }}"]
+            capabilities = ["pull", "push", "resolve"]
+            skip_verify = true
+        mode: "0644"
+
+    - name: 3. Forzar el cambio de config_path en config.toml
+      replace:
+        path: /etc/containerd/config.toml
+        regexp: 'config_path\s*=\s*".*"'
+        replace: 'config_path = "{{ certs_dir }}"'
+      notify: Reiniciar containerd
+
+    - name: 5. Configurar endpoint de crictl para evitar warnings
+      ansible.builtin.copy:
+        dest: /etc/crictl.yaml
+        content: |
+          runtime-endpoint: unix:///run/containerd/containerd.sock
+          image-endpoint: unix:///run/containerd/containerd.sock
+          timeout: 10
+          debug: false
+        mode: "0644"
+
+  handlers:
+    - name: Reiniciar containerd
+      ansible.builtin.systemd:
+        name: containerd
+        state: restarted
