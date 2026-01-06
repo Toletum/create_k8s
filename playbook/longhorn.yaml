@@ -1,0 +1,37 @@
+---
+- name: Preparar nodos para longhorn
+  hosts: nodes
+  become: yes
+  any_errors_fatal: true
+  tasks:
+    - name: 1. Cargar módulos en la sesión actual
+      community.general.modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - iscsi_tcp
+      tags: task1
+
+    - name: 2. Configurar carga de módulos iscsi_tcp al arranque
+      ansible.builtin.copy:
+        dest: /etc/modules-load.d/longhorn.conf
+        content: |
+          iscsi_tcp
+        mode: "0644"
+      tags: task2
+
+    - name: 3. Instalar dependencias de sistema y herramientas
+      apt:
+        name: [nfs-common, open-iscsi, jq, cryptsetup]
+        state: present
+        update_cache: yes
+      tags: task3
+      
+    - name: 4. Habilitar y arrancar el servicio iscsid
+      ansible.builtin.systemd:
+        name: iscsid
+        enabled: yes
+        state: started
+        masked: no
+      tags: task4
+
