@@ -131,12 +131,13 @@ chown $(id -u):$(id -g) $HOME/.kube/config
 kubectl get pods -A
 ```
 
-Copy: kubeadm join.....
 
 
 	
 ## Start workers
 ```bash
+kubeadm token create --print-join-command
+
 JOIN='kubeadm join 192.168.122.30:6443 --token 3udxdz.uo692zscbw9334dj --discovery-token-ca-cert-hash sha256:ce8eb294d0e6ec46e28bfcae2973bfece3eeaecccf181d31d0ac0e9c51f507df'
 ./ssh.sh node02 $JOIN
 ./ssh.sh node03 $JOIN
