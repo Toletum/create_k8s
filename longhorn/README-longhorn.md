@@ -26,6 +26,14 @@ for img in $IMAGES; do
 done
 ```
 
+
+
+## NFS
+En cada nodo
+```
+apt install nfs-common -y
+```
+
 ## YAML
 
 
