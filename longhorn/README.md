@@ -1,4 +1,11 @@
 # Longhorn con Helm
+## Check pre-install
+
+ansible-playbook playbook/longhorn.yaml
+
+curl -sSfL https://raw.githubusercontent.com/longhorn/longhorn/v1.7.2/scripts/environment_check.sh | bash
+
+
 ## Añadir el repositorio
 helm repo add longhorn https://charts.longhorn.io
 helm repo update
@@ -7,6 +14,5 @@ helm repo update
 helm install longhorn longhorn/longhorn --namespace longhorn-system --create-namespace
 
 # Longhorn con kubectl
-## Check pre-install
-
-curl -sSfL https://raw.githubusercontent.com/longhorn/longhorn/v1.7.2/scripts/environment_check.sh | bash
+kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.7.2/deploy/longhorn.yaml
+kubectl -n longhorn-system get pods
