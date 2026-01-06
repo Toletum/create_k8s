@@ -144,9 +144,9 @@ kubectl get pods -A
 	
 ## Start workers
 ```bash
-kubeadm token create --print-join-command
+JOIN=$(./ssh.sh node01 kubeadm token create --print-join-command |  tr -d '\r')
 
-JOIN='kubeadm join 192.168.122.30:6443 --token 3udxdz.uo692zscbw9334dj --discovery-token-ca-cert-hash sha256:ce8eb294d0e6ec46e28bfcae2973bfece3eeaecccf181d31d0ac0e9c51f507df'
+sha256:ce8eb294d0e6ec46e28bfcae2973bfece3eeaecccf181d31d0ac0e9c51f507df'
 ./ssh.sh node02 $JOIN
 ./ssh.sh node03 $JOIN
 ./ssh.sh node04 $JOIN
