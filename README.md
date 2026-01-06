@@ -96,6 +96,10 @@ ansible-playbook playbook/k8s.yaml
 
 # Check no Internet
 ansible-playbook playbook/local.yaml
+
+# Local registry with Internet
+ansible-playbook playbook/registry.yaml
+
 ```
 
 ## Disabled Intenet access
