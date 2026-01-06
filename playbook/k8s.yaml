@@ -58,6 +58,14 @@
         state: present
         update_cache: yes
       tags: task4
+      
+    - name: 4.1 Habilitar y arrancar el servicio iscsid
+      ansible.builtin.systemd:
+        name: iscsid
+        enabled: yes
+        state: started
+        masked: no
+      tags: task4
 
     - name: 5. Añadir Repositorio oficial de Kubernetes
       shell: |
