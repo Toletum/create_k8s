@@ -1,0 +1,13 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lighttpd-service
+spec:
+  selector:
+    app: lighttpd
+  ports:
+    - protocol: TCP
+      port: 80        # Puerto del servicio
+      targetPort: 80  # Puerto del contenedor
+  type: ClusterIP

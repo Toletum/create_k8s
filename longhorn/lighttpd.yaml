@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lighttpd-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: lighttpd
+  template:
+    metadata:
+      labels:
+        app: lighttpd
+    spec:
+      containers:
+      - name: lighttpd
+        image: docker.io/gists/lighttpd:latest
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: shared-storage
+          mountPath: /var/www
+      volumes:
+      - name: shared-storage
+        persistentVolumeClaim:
+          claimName: lighttpd-shared-pvc

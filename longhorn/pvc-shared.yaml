@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lighttpd-shared-pvc
+spec:
+  accessModes:
+    - ReadWriteMany  # Permite que los 3 pods lean/escriban a la vez
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 2Gi
