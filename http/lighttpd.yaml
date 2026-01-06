@@ -19,6 +19,26 @@ spec:
         image: docker.io/gists/lighttpd:latest
         ports:
         - containerPort: 80
+        
+        # Sonda de Supervivencia: Reinicia el contenedor si deja de responder
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5  # Espera 5s antes de la primera prueba
+          periodSeconds: 10       # Revisa cada 10s
+          timeoutSeconds: 2       # El servidor debe responder en menos de 2s
+
+        # Sonda de Disponibilidad: Solo envía tráfico si el servidor está listo
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 2  # Como es ligero, arrancará rápido
+          periodSeconds: 5
+          successThreshold: 1     # Con 1 éxito es suficiente para estar "Ready"
+          failureThreshold: 3     # Si falla 3 veces, lo saca del Service
+
         resources:
           requests:
             memory: "32Mi"
@@ -38,4 +58,4 @@ spec:
     - protocol: TCP
       port: 80        # Puerto del servicio
       targetPort: 80  # Puerto del contenedor
-  type: ClusterIP     
+  type: ClusterIP
