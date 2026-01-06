@@ -31,7 +31,8 @@ done
 ## NFS
 En cada nodo
 ```
-apt install nfs-common -y
+apt install nfs-common open-iscsi -y
+systemctl enable --now iscsid
 ```
 
 ## YAML
