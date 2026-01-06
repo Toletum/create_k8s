@@ -100,6 +100,10 @@ ansible-playbook playbook/local.yaml
 # Local registry with Internet
 ansible-playbook playbook/registry.yaml
 
+
+# Test
+crictl pull 192.168.0.130:5000/mi-alpine-local
+
 ```
 
 ## Disabled Intenet access
