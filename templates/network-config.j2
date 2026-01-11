@@ -1,9 +1,7 @@
 version: 2
 ethernets:
-  all_interfaces:
-    match:
-      name: "en*"  # Esto captura ens2, enp1s0, eth0, etc.
-    set-name: eth0 # Forzamos un nombre predecible si quieres
+  ens2:
+    dhcp4: false
     addresses:
       - {{ vm_ip }}/24
     nameservers:
