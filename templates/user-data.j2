@@ -2,8 +2,6 @@
 users:
   - name: root
     shell: /bin/bash
-    password: $6$mJ6Il24.pWhfuRCf$foeXMSaoMqAx2xG5dZnT8.jrqB42n.zol4Pi7cTzjmht4whYelIYqc1Nrsbi/YC4Oh31H51ypgQ31Y7p7c..C1
     ssh_authorized_keys:
       - {{ ssh_keys_encoded.content | b64decode }}
 disable_root: false
-ssh_pwauth: True
