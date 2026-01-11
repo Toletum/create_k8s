@@ -75,6 +75,13 @@ qemu-img resize data/TEMPLATE.qcow2 +20G
 
 ## Create nodes
 ```bash
+ansible-playbook playbook/vm.yaml -e 'node=node01'
+ansible-playbook playbook/vm.yaml -e 'node=node02'
+ansible-playbook playbook/vm.yaml -e 'node=node03'
+ansible-playbook playbook/vm.yaml -e 'node=node04'
+```
+### old
+```bash
 ./vms.sh
 ```
 
