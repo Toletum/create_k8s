@@ -62,30 +62,43 @@
       args:
         creates: "{{ data_path }}/cloud-init-{{ node_name }}.iso"
 
-    - name: Despliegue Libvirt y Verificación
+
+    - name: Despliegue con virt-install
       tags: [virt_deploy]
       block:
-        - name: Definir e iniciar la VM
-          community.libvirt.virt:
-            command: define
-            xml: "{{ lookup('template', project_root + '/templates/vm-template.xml.j2') }}"
+        - name: Comprobar si la VM ya existe
+          command: "virsh dominfo {{ node_name }}"
+          register: vm_exists
+          failed_when: false
+          changed_when: false
 
-        - name: Asegurar estado running
-          community.libvirt.virt:
-            name: "{{ node_name }}"
-            state: running
+        - name: Instalar VM usando virt-install
+          shell: >
+            /usr/bin/virt-install
+            --name {{ node_name }}
+            --memory {{ mem }}
+            --vcpus {{ cpu }}
+            --disk path={{ data_path }}/{{ node_name }}.qcow2,format=qcow2
+            --disk path={{ data_path }}/cloud-init-{{ node_name }}.iso,device=cdrom
+            --os-variant generic
+            --network network=default,model=virtio
+            --import
+            --graphics none
+            --noautoconsole
+          when: vm_exists.rc != 0
+          register: virt_install_res
 
         - name: Limpiar known_hosts
           known_hosts:
             name: "{{ node_name }}"
             state: absent
 
-        - name: Esperar a Cloud-Init
+        - name: Esperar a Cloud-Init vía SSH
           shell: "ssh -o StrictHostKeyChecking=no -i {{ data_path }}/keys root@{{ node_name }} 'cloud-init status --wait'"
           register: cloud_init_wait
           until: cloud_init_wait.rc == 0
           retries: 30
-          delay: 5
+          delay: 10
 
     - name: Resultado final
       tags: [always]
