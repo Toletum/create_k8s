@@ -1,0 +1,11 @@
+version: 2
+ethernets:
+  ens2:
+    dhcp4: false
+    addresses:
+      - {{ vm_ip }}/24
+    nameservers:
+      addresses: [8.8.8.8, 1.1.1.1]
+    routes:
+      - to: default
+        via: {{ bridge_gw }}

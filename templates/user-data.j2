@@ -1,0 +1,7 @@
+#cloud-config
+users:
+  - name: root
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - {{ ssh_keys_encoded.content | b64decode }}
+disable_root: false
