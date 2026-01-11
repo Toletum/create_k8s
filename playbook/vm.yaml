@@ -32,7 +32,7 @@
       copy:
         src: "{{ template_image }}"
         dest: "{{ data_path }}/{{ node_name }}.qcow2"
-        force: no
+        force: yes
         mode: '0664'
 
     - name: Preparar Cloud-Init
