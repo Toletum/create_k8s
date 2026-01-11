@@ -4,49 +4,56 @@
   connection: local
   gather_facts: false
   vars:
-    node_name: "{{ node }}"  # Se pasa por línea de comandos
+    node_name: "{{ node }}"
     mem: 8192
     cpu: 4
     bridge_gw: "192.168.122.1"
-    data_path: "{{ playbook_dir }}/data"
+    # Calculamos la raíz del proyecto (un nivel arriba de donde está el playbook)
+    project_root: "{{ playbook_dir | dirname }}"
+    data_path: "{{ project_root }}/data"
     template_image: "{{ data_path }}/TEMPLATE.qcow2"
 
   tasks:
-    - name: Validar que se haya definido el nodo
-      fail:
-        msg: "Debes definir la variable 'node'. Ej: ansible-playbook playbook.yml -e 'node=vm-test'"
-      when: node_name is not defined
+    - name: Configuración de entorno y resolución de IP
+      tags: [always, prep]  # 'always' asegura que vm_ip se resuelva aunque uses otros tags
+      block:
+        - name: Validar definición de nodo
+          fail:
+            msg: "Falta variable 'node'. Ej: -e 'node=node01'"
+          when: node_name is not defined
 
-    - name: Obtener IP mediante resolución de nombres
-      set_fact:
-        vm_ip: "{{ lookup('community.general.dig', node_name) }}"
-      failed_when: vm_ip == "" or vm_ip == "NXDOMAIN"
-      tags: [vm_ip]
+        - name: Obtener IP mediante resolución de nombres
+          set_fact:
+            vm_ip: "{{ lookup('community.general.dig', node_name) }}"
+          failed_when: vm_ip == "" or vm_ip == "NXDOMAIN"
 
-    - name: Copiar imagen base (Template)
+    - name: Preparar imagen de disco
+      tags: [vm_image]
       copy:
         src: "{{ template_image }}"
         dest: "{{ data_path }}/{{ node_name }}.qcow2"
-        force: no  # No sobreescribe si ya existe
-      tags: [vm_image]
+        force: no
+        mode: '0664'
 
-    - name: Leer clave pública SSH
-      slurp:
-        src: "{{ data_path }}/keys.pub"
-      register: ssh_keys_encoded
-      tags: [ssh_keys]
-
-    - name: Generar archivos temporales de Cloud-Init
-      template:
-        src: "{{ item.src }}"
-        dest: "{{ data_path }}/{{ item.dest }}-{{ node_name }}"
-      loop:
-        - { src: "user-data.j2", dest: "user-data" }
-        - { src: "meta-data.j2", dest: "meta-data" }
-        - { src: "network-config.j2", dest: "network-config" }
+    - name: Preparar Cloud-Init
       tags: [cloud_init_config]
+      block:
+        - name: Leer clave pública SSH
+          slurp:
+            src: "{{ data_pathroot }}/keys.pub"
+          register: ssh_keys_encoded
 
-    - name: Crear imagen ISO de Cloud-Init
+        - name: Generar archivos temporales Cloud-Init
+          template:
+            src: "{{ project_root }}/templates/{{ item.src }}"
+            dest: "{{ data_path }}/{{ item.dest }}-{{ node_name }}"
+          loop:
+            - { src: "user-data.j2", dest: "user-data" }
+            - { src: "meta-data.j2", dest: "meta-data" }
+            - { src: "network-config.j2", dest: "network-config" }
+
+    - name: Crear ISO de Cloud-Init
+      tags: [cloud_init_iso]
       command: >
         cloud-localds -N {{ data_path }}/network-config-{{ node_name }}
         {{ data_path }}/cloud-init-{{ node_name }}.iso
@@ -54,36 +61,33 @@
         {{ data_path }}/meta-data-{{ node_name }}
       args:
         creates: "{{ data_path }}/cloud-init-{{ node_name }}.iso"
-      tags: [cloud_init_iso]
 
-    - name: Definir e iniciar la VM en Libvirt
-      community.libvirt.virt:
-        command: define
-        xml: "{{ lookup('template', 'vm-template.xml.j2') }}"
-      register: vm_define
-      tags: [cloud_init]
+    - name: Despliegue Libvirt y Verificación
+      tags: [virt_deploy]
+      block:
+        - name: Definir e iniciar la VM
+          community.libvirt.virt:
+            command: define
+            xml: "{{ lookup('template', project_root + '/templates/vm-template.xml.j2') }}"
 
-    - name: Asegurar que la VM esté encendida
-      community.libvirt.virt:
-        name: "{{ node_name }}"
-        state: running
-      tags: [cloud_init]
+        - name: Asegurar estado running
+          community.libvirt.virt:
+            name: "{{ node_name }}"
+            state: running
 
-    - name: Limpiar known_hosts local
-      known_hosts:
-        name: "{{ node_name }}"
-        state: absent
-      tags: [cloud_init]
+        - name: Limpiar known_hosts
+          known_hosts:
+            name: "{{ node_name }}"
+            state: absent
 
-    - name: Esperar a que la VM responda y Cloud-Init termine
-      shell: "ssh -o StrictHostKeyChecking=no -i {{ data_path }}/keys root@{{ node_name }} 'cloud-init status --wait'"
-      register: cloud_init_wait
-      until: cloud_init_wait.rc == 0
-      retries: 30
-      delay: 5
-      tags: [cloud_init]
+        - name: Esperar a Cloud-Init
+          shell: "ssh -o StrictHostKeyChecking=no -i {{ data_path }}/keys root@{{ node_name }} 'cloud-init status --wait'"
+          register: cloud_init_wait
+          until: cloud_init_wait.rc == 0
+          retries: 30
+          delay: 5
 
     - name: Resultado final
+      tags: [always]
       debug:
         msg: "Nodo {{ node_name }} desplegado correctamente en {{ vm_ip }}"
-      tags: [cloud_init]
