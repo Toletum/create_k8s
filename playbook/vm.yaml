@@ -40,7 +40,7 @@
       block:
         - name: Leer clave pública SSH
           slurp:
-            src: "{{ data_pathroot }}/keys.pub"
+            src: "{{ data_path }}/keys.pub"
           register: ssh_keys_encoded
 
         - name: Generar archivos temporales Cloud-Init
