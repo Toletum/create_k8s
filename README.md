@@ -145,9 +145,6 @@ chown $(id -u):$(id -g) $HOME/.kube/config
 
 kubectl get pods -A
 ```
-
-
-
 	
 ## Start workers
 ```bash
@@ -160,19 +157,20 @@ JOIN=$(./ssh.sh node01 kubeadm token create --print-join-command |  tr -d '\r')
 
 ## Preparing k8s
 ```bash
-./ssh.sh node01 
-```
+scp -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i data/keys root@node01:.kube/config kubeconfig
 
-```bash
-kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
-kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-kubectl patch deployment metrics-server -n kube-system --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--kubelet-insecure-tls"}]'
+alias k='./kubectl --kubeconfig ./kubeconfig'
+
+k get nodes
+
+k apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+k apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+k patch deployment metrics-server -n kube-system --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--kubelet-insecure-tls"}]'
 
 
-kubectl get pods -A
+k get pods -A
 
-kubectl top nodes
-
+k top nodes
 ```
 
 ## Hello, World
@@ -217,9 +215,5 @@ kubectl delete svc hola-k8s
 ```
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-
 chmod +x kubectl
-
-scp -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i data/keys root@node01:.kube/config kubeconfig
-alias k='./kubectl --kubeconfig=./kubeconfig'
 ```
