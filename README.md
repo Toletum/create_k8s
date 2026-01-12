@@ -48,12 +48,8 @@ done
 
 
 # Install k8s in vm
-## edit config
-```bash
-vi config
-```
 
-add in /etc/hosts, current config
+add in /etc/hosts
 
 ```
 192.168.122.30 node01
@@ -80,11 +76,6 @@ ansible-playbook playbook/vm.yaml -e 'node=node02'
 ansible-playbook playbook/vm.yaml -e 'node=node03'
 ansible-playbook playbook/vm.yaml -e 'node=node04'
 ```
-### old
-```bash
-./vms.sh
-```
-
 
 ## Install ansible
 ```bash
@@ -92,8 +83,6 @@ python3 -m venv --system-site-packages venv
 source venv/bin/activate
 pip install ansible
 ```
-
-
 
 ## Install k8s
 ```bash
