@@ -16,7 +16,7 @@
 
   tasks:
     - name: Configuración de entorno y resolución de IP
-      tags: [always, prep]  # 'always' asegura que vm_ip se resuelva aunque uses otros tags
+      tags: [always, prep] # 'always' asegura que vm_ip se resuelva aunque uses otros tags
       block:
         - name: Validar definición de nodo
           fail:
@@ -34,7 +34,7 @@
         src: "{{ template_image }}"
         dest: "{{ data_path }}/{{ node_name }}.qcow2"
         force: yes
-        mode: '0664'
+        mode: "0664"
 
     - name: Preparar Cloud-Init
       tags: [cloud_init_config]
@@ -62,7 +62,6 @@
         {{ data_path }}/meta-data-{{ node_name }}
       args:
         creates: "{{ data_path }}/cloud-init-{{ node_name }}.iso"
-
 
     - name: Despliegue con virt-install
       tags: [virt_deploy]

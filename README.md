@@ -68,20 +68,29 @@ qemu-img convert -f qcow2 -O qcow2 data/ubuntu24.img data/TEMPLATE.qcow2
 qemu-img resize data/TEMPLATE.qcow2 +20G
 ```
 
-
-## Create nodes
-```bash
-ansible-playbook playbook/vm.yaml -e 'node=node01'
-ansible-playbook playbook/vm.yaml -e 'node=node02'
-ansible-playbook playbook/vm.yaml -e 'node=node03'
-ansible-playbook playbook/vm.yaml -e 'node=node04'
-```
-
 ## Install ansible
 ```bash
 python3 -m venv --system-site-packages venv
 source venv/bin/activate
 pip install ansible
+```
+
+
+## Create nodes
+```bash
+
+NODES=$(awk '/\[nodes\]/{flag=1;next} /\[.*\]/{flag=0} flag && NF' inventory.ini)
+for node in ${NODES}; do
+  echo $node
+  ansible-playbook playbook/vm.yaml -e "node=${node}" > "data/${node}.log" 2>&1 &
+done
+
+wait
+
+for node in ${NODES}; do
+  cat "data/${node}.log"
+done
+
 ```
 
 ## Install k8s
@@ -131,35 +140,38 @@ kubeadm init --pod-network-cidr=10.244.0.0/16
 mkdir -p $HOME/.kube
 cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 chown $(id -u):$(id -g) $HOME/.kube/config
-
-kubectl get pods -A
 ```
 	
 ## Start workers
 ```bash
 JOIN=$(./ssh.sh node01 kubeadm token create --print-join-command |  tr -d '\r')
 
-./ssh.sh node02 $JOIN
-./ssh.sh node03 $JOIN
-./ssh.sh node04 $JOIN
+{
+./ssh.sh node02 $JOIN &
+./ssh.sh node03 $JOIN &
+./ssh.sh node04 $JOIN &
+}
+
+wait
+
 ```
 
 ## Preparing k8s
 ```bash
 scp -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i data/keys root@node01:.kube/config kubeconfig
 
-alias k='./kubectl --kubeconfig ./kubeconfig'
+alias kubectl='./kubectl --kubeconfig ./kubeconfig'
 
-k get nodes
+kubectl get nodes
 
-k apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
-k apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-k patch deployment metrics-server -n kube-system --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--kubelet-insecure-tls"}]'
+kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+kubectl patch deployment metrics-server -n kube-system --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--kubelet-insecure-tls"}]'
 
 
-k get pods -A
+kubectl get pods -A
 
-k top nodes
+kubectl top nodes
 ```
 
 ## Hello, World
