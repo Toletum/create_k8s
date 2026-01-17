@@ -4,8 +4,10 @@ NODES=$(awk '/\[nodes\]/{flag=1;next} /\[.*\]/{flag=0} flag && NF' inventory.ini
 
 echo "Shutdown nodes..."
 for NODE in $NODES; do
+    {
     ./ssh.sh $NODE shutdown -h now
-done
+    } &
+done && wait
 
 
 echo "Waiting for nodes..."

@@ -131,7 +131,7 @@ sudo iptables -D FORWARD -s node04 -j DROP
 
 ## Start manager
 ```bash
-ansible-playbook playbook/k8s-manager.yaml
+ansible-playbook playbook/k8s-master.yaml
 
 scp -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i data/keys root@node01:/etc/kubernetes/admin.conf kubeconfig
 
@@ -201,9 +201,12 @@ kubectl delete svc hola-k8s
 ```
 
 # Tools
-## Helm & kubectl
+## Helm
 ```bash
-curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-chmod +x kubectl
+curl -LO https://get.helm.sh/helm-v3.13.1-linux-amd64.tar.gz
+tar -zxvf helm-v3.13.1-linux-amd64.tar.gz
+rm helm-v3.13.1-linux-amd64.tar.gz
+mv linux-amd64/helm ./helm
+rm -r linux-amd64/
+alias helm='./helm --kubeconfig ./kubeconfig'
 ```

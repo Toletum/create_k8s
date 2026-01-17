@@ -11,4 +11,4 @@ mongosh-2.5.1-linux-x64/
 
 kubeconfig
 kubectl
-
+helm
