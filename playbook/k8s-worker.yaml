@@ -1,0 +1,41 @@
+---
+- name: Obtener comando de unión desde el Maestro
+  hosts: node01
+  become: yes
+  tasks:
+    - name: 1. Generar el comando join
+      command: kubeadm token create --print-join-command
+      register: raw_join_command
+
+    - name: 2. Limpiar y guardar el comando como una "fact"
+      set_fact:
+        dynamic_join_command: "{{ raw_join_command.stdout | replace('\r', '') | trim }}"
+
+- name: Unir nodos Workers al clúster de Kubernetes
+  hosts: node02 node03 node04
+  become: yes
+  vars:
+    join_command: "{{ hostvars['node01']['dynamic_join_command'] }}"
+  tasks:
+    - name: 0. Chequear si el nodo ya forma parte de un clúster
+      stat:
+        path: /etc/kubernetes/kubelet.conf
+      register: kubelet_check
+
+    - name: "Proceso de unión al clúster"
+      when: not kubelet_check.stat.exists
+      block:
+        - name: 1. Ejecutar comando de unión
+          command: "{{ join_command }}"
+          register: join_result
+
+        - name: 2. Mostrar resultado de la unión
+          debug:
+            msg:
+              - "Nodo: {{ inventory_hostname }}"
+              - "Resultado: {{ join_result.stdout_lines }}"
+
+    - name: 3. Confirmación
+      debug:
+        msg: "El nodo ya está configurado como worker."
+      when: kubelet_check.stat.exists

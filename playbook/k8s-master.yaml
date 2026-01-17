@@ -1,0 +1,30 @@
+---
+- name: Prepara control-plane para Kubernetes
+  hosts: node01
+  become: yes
+  any_errors_fatal: true
+  vars:
+    node_name: "{{ node | default(inventory_hostname) }}"
+
+  tasks:
+    - name: 0. Chequear si el fichero admin.conf existe
+      stat:
+        path: /etc/kubernetes/admin.conf
+      register: kube_check
+    - name: k8s init
+      when: not kube_check.stat.exists
+      block:
+        - name: 1. Ejecutar comando kubeadm init
+          command: kubeadm init --pod-network-cidr=10.244.0.0/16
+          register: result
+
+        - name: 2. Mostrar el resultado del uptime
+          debug:
+            msg:
+              - "Nodo: {{ node_name }}"
+              - "Kubeadm init: {{ result.stdout }}"
+    - name: Ya existe?
+      debug:
+        msg:
+          - Control-Plane ya estaba listo
+      when: kube_check.stat.exists
