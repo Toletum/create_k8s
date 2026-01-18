@@ -45,6 +45,44 @@ kubectl get svc -n ingress-apisix
 
 curl -i http://node01:32632/echo
 
+
+# SIN GATEWAY
+
+Local Path Provisioner
+
+helm install apisix apisix/apisix \
+  --namespace ingress-apisix \
+  --create-namespace \
+  --set apisix.hostNetwork=true \
+  --set apisix.nodeListen=8080 \
+  --set gateway.type=None \
+  --set etcd.persistence.enabled=true \
+  --set etcd.persistence.storageClass="local-path" \
+  --set etcd.persistence.size=8Gi
+
+kubectl get configmap apisix -n ingress-apisix -o jsonpath='{.data.config\.yaml}' | grep -A 5 "admin_key"
+
+curl "http://127.0.0.1:9180/apisix/admin/routes/2" \
+-H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+-X PUT -d '
+{
+  "uri": "/echo",
+  "upstream": {
+    "type": "roundrobin",
+    "nodes": {
+      "echo-service.default.svc.cluster.local:8080": 1
+    }
+  }
+}'
+
+
+# Solo si el upgrade anterior no funcionó:
+helm install apisix-dashboard apisix/apisix-dashboard \
+  --namespace ingress-apisix \
+  --set config.conf.apisix.admin_key=edd1c9f034335f136f87ad84b625c8f1 \
+  --set config.conf.etcd.endpoints={apisix-etcd:2379}
+
+
 ## Clean
 
 helm uninstall apisix -n ingress-apisix
