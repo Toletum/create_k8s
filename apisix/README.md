@@ -3,15 +3,21 @@ kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisione
 
 # Kubectl
 
+## Crear NS
 kubectl apply -f apisix/ns.yaml
+
+## Crear Etcd
 kubectl apply -f apisix/etcd-ha.yaml
-
 kubectl -n apisix get pods
-
+### Etcd Cluster
 kubectl exec -it etcd-0 -n apisix -- etcdctl endpoint status --write-out=table --endpoints=etcd-0.etcd:2379,etcd-1.etcd:2379,etcd-2.etcd:2379
+
+## Crear APISIX
 
 kubectl apply -f apisix/apisix.yaml
 kubectl -n apisix get pods
+
+## Crear Route
 
 curl "http://node02:9180/apisix/admin/routes/1" \
 -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
