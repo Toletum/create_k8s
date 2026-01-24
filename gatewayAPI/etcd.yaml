@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: etcd
+  namespace: apisix
+spec:
+  serviceName: etcd
+  replicas: 1
+  selector:
+    matchLabels:
+      app: etcd
+  template:
+    metadata:
+      labels:
+        app: etcd
+    spec:
+      containers:
+      - name: etcd
+        image: bitnami/etcd:3.5.0
+        env:
+        - name: ALLOW_NONE_AUTHENTICATION
+          value: "yes"
+        - name: ETCD_DATA_DIR
+          value: "/bitnami/etcd/data"
+        ports:
+        - containerPort: 2379
+          name: client
+        volumeMounts:
+        - name: data
+          mountPath: /bitnami/etcd/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "local-path"
+        resources:
+          requests:
+            storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: etcd
+  namespace: apisix
+spec:
+  ports:
+  - port: 2379
+    targetPort: 2379
+    name: client
+  selector:
+    app: etcd
