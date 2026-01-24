@@ -44,8 +44,7 @@ spec:
                 fieldPath: metadata.namespace
         volumeMounts:
         - name: controller-config
-          mountPath: /ingress-apisix/conf/config.yaml
-          subPath: config.yaml
+          mountPath: /ingress-apisix/conf
 
       volumes:
       - name: config
