@@ -5,6 +5,9 @@ metadata:
   namespace: apisix
 data:
   config.yaml: |
+    apisix:
+      node_listen: 8080
+
     deployment:
       admin:
         allow_admin:
@@ -13,8 +16,7 @@ data:
           - name: admin
             key: edd1c9f034335f136f87ad84b625c8f1
             role: admin
+
       etcd:
         host:
-          - "http://etcd-0.etcd.apisix.svc.cluster.local:2379"
-    apisix:
-      node_listen: 9080
+          - "http://etcd-headless.apisix.svc.cluster.local:2379"
