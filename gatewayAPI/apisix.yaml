@@ -38,7 +38,7 @@ spec:
         command:
           - /ingress-apisix/apisix-ingress-controller
           - ingress
-          - --config-path=/ingress-apisix/conf/config.yaml
+          - --config-path=/ingress-apisix/conf
         env:
           - name: POD_NAMESPACE
             valueFrom:
