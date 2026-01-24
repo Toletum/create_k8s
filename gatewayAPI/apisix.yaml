@@ -1,60 +1,31 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: apisix-gateway
+  name: apisix
   namespace: apisix
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: apisix-gateway
+      app: apisix
   template:
     metadata:
       labels:
-        app: apisix-gateway
+        app: apisix
     spec:
-      serviceAccountName: apisix-ingress-controller
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
-        # CONTENEDOR 1: APISIX (El Proxy)
-        - name: apisix
-          image: apache/apisix:3.9.0-debian
-          ports:
-            - containerPort: 9080
-              name: http
-            - containerPort: 9180
-              name: admin
-
-        # CONTENEDOR 2: Ingress Controller (El que traduce CRDs a APISIX)
-        - name: apisix-ingress-controller
-          image: apache/apisix-ingress-controller:1.8.0
-          args:
-            - /ingress-apisix/apisix-ingress-controller
-            - ingress
-            - --config-path=/ingress-apisix/conf/config.yaml
-          env:
-            - name: POD_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-          volumeMounts:
-            - name: controller-config
-              mountPath: /ingress-apisix/conf
+      - name: apisix
+        image: apache/apisix:3.14.1-debian
+        ports:
+        - containerPort: 8080
+          hostPort: 8080
+        volumeMounts:
+        - name: config
+          mountPath: /usr/local/apisix/conf/config.yaml
+          subPath: config.yaml
       volumes:
-        - name: controller-config
-          configMap:
-            name: apisix-controller-conf
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: apisix-gateway-public
-  namespace: apisix
-spec:
-  type: NodePort
-  ports:
-    - port: 80
-      targetPort: 9080
-      name: http
-  selector:
-    app: apisix-gateway
+      - name: config
+        configMap:
+          name: apisix-conf
