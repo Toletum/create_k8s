@@ -23,13 +23,6 @@ spec:
               name: http
             - containerPort: 9180
               name: admin
-          readinessProbe:
-            httpGet:
-              path: /apisix/admin/services
-              port: 9180
-              httpHeaders:
-                - name: X-API-KEY
-                  value: edd1c9f034335f136f87ad84b625c88b
 
         # CONTENEDOR 2: Ingress Controller (El que traduce CRDs a APISIX)
         - name: apisix-ingress-controller
