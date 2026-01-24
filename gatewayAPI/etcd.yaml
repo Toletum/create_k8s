@@ -5,7 +5,7 @@ metadata:
   namespace: apisix
 spec:
   serviceName: etcd-headless
-  replicas: 1
+  replicas: 1 # Considera 3 para alta disponibilidad
   selector:
     matchLabels:
       app: etcd
@@ -16,19 +16,31 @@ spec:
     spec:
       containers:
       - name: etcd
-        image: gcr.io/etcd-development/etcd:v3.5.15
+        image: quay.io/coreos/etcd:v3.5.15 # Imagen estándar oficial
         command:
-          - etcd
-          - --data-dir=/bitnami/etcd/data
-          - --name=etcd-0
+          - /usr/local/bin/etcd
+          - --data-dir=/var/run/etcd/default.etcd
+          - --name=$(NODE_NAME)
           - --listen-client-urls=http://0.0.0.0:2379
-          - --advertise-client-urls=http://etcd-headless.apisix.svc.cluster.local:2379
+          - --advertise-client-urls=http://$(NODE_NAME).etcd-headless.apisix.svc.cluster.local:2379
+          - --listen-peer-urls=http://0.0.0.0:2380
+          - --initial-advertise-peer-urls=http://$(NODE_NAME).etcd-headless.apisix.svc.cluster.local:2380
+          - --initial-cluster=etcd-0=http://etcd-0.etcd-headless.apisix.svc.cluster.local:2380
+          - --initial-cluster-state=new
+          - --initial-cluster-token=etcd-cluster-1
+        env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
         ports:
         - containerPort: 2379
           name: client
+        - containerPort: 2380
+          name: peer
         volumeMounts:
         - name: data
-          mountPath: /bitnami/etcd/data
+          mountPath: /var/run/etcd/
   volumeClaimTemplates:
   - metadata:
       name: data
@@ -38,17 +50,3 @@ spec:
       resources:
         requests:
           storage: 1Gi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: etcd-headless
-  namespace: apisix
-spec:
-  clusterIP: None
-  ports:
-  - port: 2379
-    targetPort: 2379
-    name: client
-  selector:
-    app: etcd
