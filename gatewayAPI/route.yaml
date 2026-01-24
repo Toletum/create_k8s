@@ -12,5 +12,7 @@ spec:
       paths:
       - /*
     backend:
-      serviceName: echo-service
-      servicePort: 8080
+      service:
+        name: echo-service
+        port:
+          number: 8080
