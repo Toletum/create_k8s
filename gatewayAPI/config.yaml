@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apisix-controller-conf
+  namespace: apisix
+data:
+  config.yaml: |
+    ingress:
+      enabled_ingress_endpoints:
+        - apisix.apache.org/v2
+      ingress_class: apisix # Importante para tus objetos Ingress
+    apisix:
+      admin_key: "edd1c9f034335f136f87ad84b625c88b"
+      base_url: "http://127.0.0.1:9180/apisix/admin"
