@@ -1,15 +1,16 @@
 apiVersion: apisix.apache.org/v2
 kind: ApisixRoute
 metadata:
-  name: echo-api-route
-  namespace: default
+  name: echo-route
+  namespace: apisix
 spec:
-  ingressClassName: apisix # <--- AÑADE ESTO
   http:
-    - name: echo-rule
-      match:
-        paths:
-          - /echo
-      backends:
-        - serviceName: echo-service
-          servicePort: 8080
+  - name: echo
+    match:
+      hosts:
+      - "*"
+      paths:
+      - /*
+    backend:
+      serviceName: echo-service
+      servicePort: 8080
