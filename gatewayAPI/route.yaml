@@ -11,6 +11,7 @@ spec:
           - "*"
         paths:
           - /*
-      upstream:
-        serviceName: echo-service
-        servicePort: 8080
+      rules:
+        - backend:
+            serviceName: echo-service
+            servicePort: 8080
