@@ -5,14 +5,12 @@ metadata:
   namespace: apisix
 spec:
   http:
-  - name: echo
-    match:
-      hosts:
-      - "*"
-      paths:
-      - /*
-    backend:
-      service:
-        name: echo-service
-        port:
-          number: 8080
+    - name: echo
+      rules:
+        - matches:
+            - path:
+                type: Prefix
+                value: /
+          forwardTo:
+            - serviceName: echo-service
+              port: 8080
