@@ -32,3 +32,17 @@ spec:
       - name: config
         configMap:
           name: apisix-conf
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apisix-admin
+  namespace: apisix
+spec:
+  selector:
+    app: apisix
+  ports:
+  - name: admin
+    port: 9180
+    targetPort: 9180
