@@ -1,16 +1,16 @@
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: HTTPRoute
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
 metadata:
   name: echo-route
   namespace: apisix
 spec:
-  parentRefs:
-    - name: apisix-gateway
-  rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /
-      forwardTo:
-        - serviceName: echo-service
-          port: 8080
+  http:
+    - name: rule1
+      match:
+        hosts:
+          - "*"
+        paths:
+          - /*
+      upstream:
+        serviceName: echo-service
+        servicePort: 8080
