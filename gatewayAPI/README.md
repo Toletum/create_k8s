@@ -5,6 +5,14 @@ kubectl -n apisix exec -it etcd-0 -- etcdctl endpoint health   --endpoints=http:
 http://etcd-headless.apisix.svc.cluster.local:2379 is healthy: successfully committed proposal: took = 9.055787ms
 
 
+kubectl apply -f gatewayAPI/rbac.yaml
+
+kubectl apply -f https://raw.githubusercontent.com/apache/apisix-ingress-controller/v1.8.0/samples/deploy/crd/v1/ApisixRoute.yaml
+kubectl apply -f https://raw.githubusercontent.com/apache/apisix-ingress-controller/v1.8.0/samples/deploy/crd/v1/ApisixUpstream.yaml
+kubectl apply -f https://raw.githubusercontent.com/apache/apisix-ingress-controller/v1.8.0/samples/deploy/crd/v1/ApisixPluginConfig.yaml
+
+
+
 kubectl apply -f gatewayAPI/config.yaml
 kubectl apply -f gatewayAPI/apisix.yaml
 
