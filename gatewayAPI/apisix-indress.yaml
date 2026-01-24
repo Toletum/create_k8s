@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apisix-ingress-controller
+  namespace: apisix
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apisix-ingress-controller
+  template:
+    metadata:
+      labels:
+        app: apisix-ingress-controller
+    spec:
+      serviceAccountName: apisix-ingress-serviceaccount
+
+      containers:
+      - name: ingress-controller
+        image: apache/apisix-ingress-controller:1.8.0
+        command:
+          - /ingress-apisix/apisix-ingress-controller
+          - ingress
+          - --config-path=/ingress-apisix/conf/config.yaml
+        env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+        volumeMounts:
+        - name: controller-config
+          mountPath: /ingress-apisix/conf
+
+      volumes:
+      - name: controller-config
+        configMap:
+          name: apisix-ingress-conf

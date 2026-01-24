@@ -1,10 +1,9 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: DaemonSet
 metadata:
   name: apisix
   namespace: apisix
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: apisix
@@ -15,43 +14,21 @@ spec:
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
-      serviceAccountName: apisix-ingress-serviceaccount
+
       containers:
-      # --- DATA PLANE: APISIX ---
       - name: apisix
         image: apache/apisix:3.14.1-debian
         ports:
         - containerPort: 8080
           hostPort: 8080
-        - containerPort: 9180 # Puerto Admin API
+        - containerPort: 9180
           hostPort: 9180
         volumeMounts:
         - name: config
           mountPath: /usr/local/apisix/conf/config.yaml
           subPath: config.yaml
-        - name: controller-config
-          mountPath: /ingress-apisix/conf
-
-      # --- CONTROL PLANE: INGRESS CONTROLLER ---
-      - name: ingress-controller
-        image: apache/apisix-ingress-controller:1.8.0
-        command:
-          - /ingress-apisix/apisix-ingress-controller
-          - ingress
-          - --config-path=/ingress-apisix/conf
-        env:
-          - name: POD_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
-        volumeMounts:
-        - name: controller-config
-          mountPath: /ingress-apisix/conf
 
       volumes:
       - name: config
         configMap:
           name: apisix-conf
-      - name: controller-config
-        configMap:
-          name: apisix-ingress-conf
