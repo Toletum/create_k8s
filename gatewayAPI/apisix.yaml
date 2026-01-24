@@ -29,6 +29,8 @@ spec:
         - name: config
           mountPath: /usr/local/apisix/conf/config.yaml
           subPath: config.yaml
+        - name: controller-config
+          mountPath: /ingress-apisix/conf
 
       # --- CONTROL PLANE: INGRESS CONTROLLER ---
       - name: ingress-controller
