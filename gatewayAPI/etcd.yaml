@@ -4,7 +4,7 @@ metadata:
   name: etcd
   namespace: apisix
 spec:
-  serviceName: etcd
+  serviceName: etcd-headless
   replicas: 1
   selector:
     matchLabels:
@@ -17,11 +17,12 @@ spec:
       containers:
       - name: etcd
         image: gcr.io/etcd-development/etcd:v3.5.15
-        env:
-        - name: ALLOW_NONE_AUTHENTICATION
-          value: "yes"
-        - name: ETCD_DATA_DIR
-          value: "/bitnami/etcd/data"
+        command:
+          - etcd
+          - --data-dir=/bitnami/etcd/data
+          - --name=etcd-0
+          - --listen-client-urls=http://0.0.0.0:2379
+          - --advertise-client-urls=http://etcd-headless.apisix.svc.cluster.local:2379
         ports:
         - containerPort: 2379
           name: client
@@ -29,14 +30,14 @@ spec:
         - name: data
           mountPath: /bitnami/etcd/data
   volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        storageClassName: "local-path"
-        resources:
-          requests:
-            storage: 1Gi
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: local-path
+      resources:
+        requests:
+          storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
