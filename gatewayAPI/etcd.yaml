@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: etcd
-        image: bitnami/etcd:3.5.0
+        image: gcr.io/etcd-development/etcd:v3.5.15
         env:
         - name: ALLOW_NONE_AUTHENTICATION
           value: "yes"
