@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: echo-api
+  namespace: apisix
 spec:
   replicas: 1
   selector:
@@ -22,6 +23,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: echo-service
+  namespace: apisix
 spec:
   type: ClusterIP
   selector:
@@ -29,17 +31,3 @@ spec:
   ports:
     - port: 8080
       targetPort: 8080
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: echo-service
-spec:
-  type: NodePort
-  selector:
-    app: echo-api
-  ports:
-    - port: 8080
-      targetPort: 8080
-      nodePort: 30080
