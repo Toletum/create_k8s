@@ -5,18 +5,16 @@ metadata:
   namespace: apisix
 data:
   config.yaml: |
+    deployment:
+      admin:
+        allow_admin:
+          - 0.0.0.0/0
+        admin_key:
+          - name: admin
+            key: edd1c9f034335f136f87ad84b625c8f1
+            role: admin
+      etcd:
+        host:
+          - "http://etcd-0.etcd.apisix.svc.cluster.local:2379"
     apisix:
       node_listen: 9080
-      enable_admin: true
-      admin_key:
-        - name: "admin"
-          key: edd1c9f034335f136f87ad84b625c88b
-          role: admin
-    deployment:
-      role: traditional
-      role_apisix_control_plane:
-        config_provider: etcd
-        etcd:
-          host:
-            - "http://etcd:2379" # Aquí es donde está tu StatefulSet
-          prefix: "/apisix"

@@ -18,9 +18,6 @@ spec:
         # CONTENEDOR 1: APISIX (El Proxy)
         - name: apisix
           image: apache/apisix:3.9.0-debian
-          env:
-            - name: APISIX_ETCD_HOST
-              value: "http://etcd:2379"
           ports:
             - containerPort: 9080
               name: http

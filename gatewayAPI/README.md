@@ -8,3 +8,5 @@ kubectl apply -f https://raw.githubusercontent.com/apache/apisix-ingress-control
 kubectl apply -f https://raw.githubusercontent.com/apache/apisix-ingress-controller/v1.8.0/samples/deploy/crd/v1/ApisixPluginConfig.yaml
 
 kubectl  apply -f gatewayAPI/rbac.yaml
+
+kubectl apply -f gatewayAPI/config.yaml
