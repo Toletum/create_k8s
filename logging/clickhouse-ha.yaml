@@ -1,0 +1,163 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: clickhouse-config
+data:
+  listen_host.xml: |
+    <clickhouse>
+        <listen_host>0.0.0.0</listen_host>
+    </clickhouse>
+  remote_servers.xml: |
+    <clickhouse>
+        <remote_servers>
+            <logs_cluster>
+                <shard>
+                    <internal_replication>true</internal_replication>
+                    <replica>
+                        <host>clickhouse-0.clickhouse-hs</host>
+                        <port>9000</port>
+                    </replica>
+                    <replica>
+                        <host>clickhouse-1.clickhouse-hs</host>
+                        <port>9000</port>
+                    </replica>
+                    <replica>
+                        <host>clickhouse-2.clickhouse-hs</host>
+                        <port>9000</port>
+                    </replica>
+                </shard>
+            </logs_cluster>
+            <zookeeper>
+                <node>
+                    <host>clickhouse-0.clickhouse-hs</host>
+                    <port>9181</port>
+                </node>
+                <node>
+                    <host>clickhouse-1.clickhouse-hs</host>
+                    <port>9181</port>
+                </node>
+                <node>
+                    <host>clickhouse-2.clickhouse-hs</host>
+                    <port>9181</port>
+                </node>
+            </zookeeper>
+        </remote_servers>
+    </clickhouse>
+  macros.xml: |
+    <clickhouse>
+        <macros>
+            <shard>1</shard>
+            <replica from_env="HOSTNAME"></replica>
+        </macros>
+    </clickhouse>
+  keeper_config.xml: |
+    <clickhouse>
+        <keeper_server>
+            <tcp_port>9181</tcp_port>
+            <storage_path>/var/lib/clickhouse/coordination</storage_path>
+            <raft_configuration>
+                <server>
+                    <id>0</id>
+                    <hostname>clickhouse-0.clickhouse-hs</hostname>
+                    <port>9234</port>
+                </server>
+                <server>
+                    <id>1</id>
+                    <hostname>clickhouse-1.clickhouse-hs</hostname>
+                    <port>9234</port>
+                </server>
+                <server>
+                    <id>2</id>
+                    <hostname>clickhouse-2.clickhouse-hs</hostname>
+                    <port>9234</port>
+                </server>
+            </raft_configuration>
+        </keeper_server>
+    </clickhouse>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clickhouse-hs
+spec:
+  clusterIP: None
+  selector:
+    app: clickhouse
+  ports:
+    - port: 8123
+      name: http
+    - port: 9000
+      name: native
+    - port: 9181
+      name: keeper
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: clickhouse
+spec:
+  serviceName: clickhouse-hs
+  replicas: 3
+  selector:
+    matchLabels:
+      app: clickhouse
+  template:
+    metadata:
+      labels:
+        app: clickhouse
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: clickhouse
+              topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: clickhouse
+          image: clickhouse/clickhouse-server:latest
+          env:
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          command:
+            - "/bin/bash"
+            - "-c"
+            - |
+              # 1. Extraer el ID del pod (0, 1 o 2)
+              NODE_ID=${HOSTNAME##*-}
+
+              # 2. Escribir el ID del servidor Keeper y las Macros en un archivo local
+              cat <<EOF > /etc/clickhouse-server/config.d/generated_configs.xml
+              <clickhouse>
+                  <keeper_server>
+                      <server_id>${NODE_ID}</server_id>
+                  </keeper_server>
+                  <macros>
+                      <shard>1</shard>
+                      <replica>${HOSTNAME}</replica>
+                  </macros>
+              </clickhouse>
+              EOF
+
+              # 3. Lanzar el server
+              /entrypoint.sh
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/clickhouse-server/config.d/
+            - name: data
+              mountPath: /var/lib/clickhouse
+      volumes:
+        - name: config-volume
+          configMap:
+            name: clickhouse-config
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "local-path"
+        resources:
+          requests:
+            storage: 10Gi

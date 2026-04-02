@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: clickhouse-keeper
+spec:
+  clusterIP: None
+  ports:
+    - port: 9181
+      name: client
+  selector:
+    app: clickhouse-keeper
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: clickhouse-keeper
+spec:
+  serviceName: clickhouse-keeper
+  replicas: 3
+  selector:
+    matchLabels:
+      app: clickhouse-keeper
+  template:
+    metadata:
+      labels:
+        app: clickhouse-keeper
+    spec:
+      containers:
+        - name: keeper
+          image: clickhouse/clickhouse-keeper:latest
+          ports:
+            - containerPort: 9181
+          env:
+            - name: KEEPER_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
