@@ -1,3 +1,22 @@
+# PreInstall
+```bash
+mkdir data  
+wget -O data/ubuntu24.img https://cloud-images.ubuntu.com/minimal/daily/plucky/current/plucky-minimal-cloudimg-amd64.img
+ssh-keygen -t ed25519 -f data/keys -N "" -q
+qemu-img convert -f qcow2 -O qcow2 data/ubuntu24.img data/TEMPLATE.qcow2
+qemu-img resize data/TEMPLATE.qcow2 +20G
+```
+
+## Install ansible
+```bash
+python3 -m venv --system-site-packages venv
+source venv/bin/activate
+pip install ansible dnspython
+```
+
+## kubectl
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+
 ## Create nodes
 ```bash
 

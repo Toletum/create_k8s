@@ -4,7 +4,7 @@
   connection: local
   gather_facts: false
   vars:
-    ansible_python_interpreter: /home/toletum/cluster/venv/bin/python
+    ansible_python_interpreter: "{{ project_root }}/venv/bin/python"
     node_name: "{{ node }}"
     mem: 8192
     cpu: 4
