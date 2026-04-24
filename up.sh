@@ -18,7 +18,7 @@ scp -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i data/keys root@node01:/et
 
 ansible-playbook playbook/k8s-worker.yaml
 
-alias kubectl='./kubectl --kubeconfig ./kubeconfig'
+alias kubectl="$PWD/kubectl --kubeconfig $PWD/kubeconfig"
 
 kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml

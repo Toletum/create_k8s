@@ -7,7 +7,7 @@ data/
 *.gz
 *.log
 
-mongosh-2.5.1-linux-x64/
+mongosh-2.8.2-linux-x64/
 
 kubeconfig
 kubectl
