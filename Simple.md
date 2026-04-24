@@ -46,8 +46,9 @@ ansible-playbook playbook/k8s-master.yaml
 
 scp -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i data/keys root@node01:/etc/kubernetes/admin.conf kubeconfig
 
-alias kubectl='./kubectl --kubeconfig ./kubeconfig'
-alias k='./kubectl --kubeconfig ./kubeconfig'
+
+alias kubectl="$PWD/kubectl --kubeconfig $PWD/kubeconfig"
+alias k="$PWD/kubectl --kubeconfig $PWD/kubeconfig"
 
 kubectl get nodes
 

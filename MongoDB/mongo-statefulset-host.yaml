@@ -37,11 +37,17 @@ spec:
               topologyKey: "kubernetes.io/hostname"
       initContainers:
         - name: init-keyfile
-          image: 192.168.0.130:5000/alpine:latest
+          image: quay.io/mongodb/mongodb-community-server:latest
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
           command:
             - sh
             - -c
-            - "cp /mnt/keyfile /data/db/keyfile && chmod 600 /data/db/keyfile && chown 999:999 /data/db/keyfile"
+            - |
+              cp /mnt/keyfile /data/db/keyfile
+              chmod 600 /data/db/keyfile
+              chown -v -R mongodb:mongodb /data/db
           volumeMounts:
             - name: mongo-keyfile
               mountPath: /mnt
@@ -49,7 +55,10 @@ spec:
               mountPath: /data/db
       containers:
         - name: mongo
-          image: 192.168.0.130:5000/mongo:8.0
+          image: quay.io/mongodb/mongodb-community-server:latest
+          #          command:
+          #            - sleep
+          #            - infinity
           args:
             - "--replSet"
             - "rs0"

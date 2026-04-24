@@ -1,22 +1,7 @@
 # Mongo StatefulSet
-## images
-```bash
-podman pull alpine:latest
-podman pull mongo:8.0
-podman tag alpine:latest 192.168.0.130:5000/alpine:latest
-podman tag mongo:8.0 192.168.0.130:5000/mongo:8.0
-podman push 192.168.0.130:5000/alpine:latest
-podman push 192.168.0.130:5000/mongo:8.0
-```
-
 ## Playbook
 ```bash
-ansible-playbook mongo-rs.yaml --tags copy
-ansible-playbook mongo-rs.yaml --tags labels
-ansible-playbook mongo-rs.yaml --tags keyfile
-ansible-playbook mongo-rs.yaml --tags apply
-ansible-playbook mongo-rs.yaml --tags rs
-ansible-playbook mongo-rs.yaml --tags adminuser
+ansible-playbook mongo-rs.yaml 
 ```
 
 ## Test
