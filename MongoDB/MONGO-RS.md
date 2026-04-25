@@ -17,5 +17,5 @@ tar xf mongosh-2.8.2-linux-x64.tgz
 
 ./mongosh-2.8.2-linux-x64/bin/mongosh 'mongodb://admin:admin@node02,node03,node04/?replicaSet=rs0&readPreference=secondary'
 
-./mongosh-2.8.2-linux-x64/bin/mongosh "mongodb://admin:admin@123456:30017/?directConnection=true"
+./mongosh-2.8.2-linux-x64/bin/mongosh "mongodb://admin:admin@node02/?directConnection=true"
 ```
