@@ -18,15 +18,15 @@ scp -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i data/keys root@node01:/et
 
 ansible-playbook playbook/k8s-worker.yaml
 
-alias kubectl="$PWD/kubectl --kubeconfig $PWD/kubeconfig"
+KUBECTL="$PWD/kubectl --kubeconfig $PWD/kubeconfig"
 
-kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
-kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-kubectl patch deployment metrics-server -n kube-system --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--kubelet-insecure-tls"}]'
+${KUBECTL} apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+${KUBECTL} apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+${KUBECTL} patch deployment metrics-server -n kube-system --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--kubelet-insecure-tls"}]'
 
-until kubectl top nodes >/dev/null 2>&1; do
+until ${KUBECTL} top nodes >/dev/null 2>&1; do
   echo "Esperando a que Metrics Server esté listo..."
   sleep 5
 done
 
-kubectl top nodes
+${KUBECTL} top nodes
