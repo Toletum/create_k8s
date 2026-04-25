@@ -94,7 +94,12 @@ spec:
         - name: mongo-keyfile
           secret:
             secretName: mongo-keyfile
-        - name: data
-          hostPath:
-            path: "/mnt/mongo-data"
-            type: DirectoryOrCreate
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "local-storage"
+        resources:
+          requests:
+            storage: 50Gi
