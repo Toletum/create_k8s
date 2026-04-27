@@ -1,7 +1,14 @@
 # Mongo StatefulSet
 ## Playbook
 ```bash
-ansible-playbook mongo-rs.yaml 
+ansible-playbook MongoDB/ansible-mongo-rs.yaml --tags labels
+ansible-playbook MongoDB/ansible-mongo-rs.yaml --tags storage
+ansible-playbook MongoDB/ansible-mongo-rs.yaml --tags keyfile
+ansible-playbook MongoDB/ansible-mongo-rs.yaml --tags pvc
+ansible-playbook MongoDB/ansible-mongo-rs.yaml --tags apply
+ansible-playbook MongoDB/ansible-mongo-rs.yaml --tags wait
+ansible-playbook MongoDB/ansible-mongo-rs.yaml --tags rs
+ansible-playbook MongoDB/ansible-mongo-rs.yaml --tags adminuser
 ```
 
 ## Test

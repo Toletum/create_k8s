@@ -40,15 +40,19 @@
       ansible.builtin.command: "{{ KUBECTL }} apply -f {{ project_root }}/MongoDB/mongo-statefulset-host.yaml"
       tags: [apply]
 
-    - name: Esperar a que haya 3 pods mongo running 1/3
+    - name: Esperar a que haya 3 pods mongo running 1/4
       shell: "{{ KUBECTL }} wait --for=condition=ready pod -l app=mongo --timeout=300s"
       tags: [wait]
 
-    - name: Esperar a que haya 3 pods mongo running 2/3
+    - name: Esperar a que haya 3 pods mongo running 2/4
       shell: "{{ KUBECTL }} wait --for=condition=ready pod -l app=mongo --timeout=300s"
       tags: [wait]
 
-    - name: Esperar a que haya 3 pods mongo running 3/3
+    - name: Esperar a que haya 3 pods mongo running 3/4
+      shell: "{{ KUBECTL }} wait --for=condition=ready pod -l app=mongo --timeout=300s"
+      tags: [wait]
+
+    - name: Esperar a que haya 3 pods mongo running 4/4
       shell: "{{ KUBECTL }} wait --for=condition=ready pod -l app=mongo --timeout=300s"
       tags: [wait]
 
