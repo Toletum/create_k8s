@@ -75,13 +75,14 @@
         - name: Instalar VM usando virt-install
           shell: >
             /usr/bin/virt-install
+            --connect qemu:///system
             --name {{ node_name }}
             --memory {{ mem }}
             --vcpus {{ cpu }}
             --disk path={{ data_path }}/{{ node_name }}.qcow2,format=qcow2
             --disk path={{ data_path }}/cloud-init-{{ node_name }}.iso,device=cdrom
             --os-variant generic
-            --network network=default,model=virtio
+            --network bridge=virbr0,model=virtio
             --import
             --graphics none
             --noautoconsole

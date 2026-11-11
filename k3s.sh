@@ -46,7 +46,7 @@ EOF
 scp -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i data/keys  temp root@node01:/var/lib/rancher/k3s/server/manifests/traefik-config.yaml
 
 
-cat <<EOF | kubectl apply -f -
+cat << 'EOF' | kubectl apply -f -
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
@@ -56,12 +56,11 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`node01`) # Cambia esto por tu dominio o IP
+    - match: Host(`node01`)
       kind: Rule
       services:
         - name: api@internal
           kind: TraefikService
-
 EOF
 
 
