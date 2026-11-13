@@ -1,83 +1,73 @@
 # create_k8s
 
-Scripts y playbooks de Ansible/Bash/libvirt para crear un clúster Kubernetes (kubeadm o k3s) sobre VMs KVM de Ubuntu, con registry local, almacenamiento, gateway (APISIX), HAProxy y ejemplos (MongoDB, Longhorn, lighttpd).
+Scripts y playbooks de Ansible/Bash para aprovisionar VMs Ubuntu con KVM/libvirt y desplegar un clúster k3s. La configuración activa usa `node01` como servidor k3s y `node02`–`node04` como agentes. No hay un flujo kubeadm activo en la raíz.
 
-## Visibilidad y rama
-- Público (github.com/Toletum/create_k8s). Rama por defecto: `main`.
-- Descripción en GitHub: "create_k8s".
+## Alcance de la revisión
+- Analizar y modificar solo archivos activos fuera de directorios llamados `OLD`; ignorar por completo `OLD/` y `playbook/OLD/` (no leer ni usar su contenido).
+- `venv/` y `data/` son directorios locales generados; no inspeccionar sus contenidos para entender o modificar el código del proyecto.
+- La guía vigente en la raíz es `README.md`. `Storage.MD` está vacío.
 
-## Stack
-- Bash, Ansible (playbooks en `playbook/`), libvirt/virsh y qemu-img en el host.
-- Plantillas cloud-init (`templates/*.j2`).
-- Manifiestos Kubernetes YAML (`apisix/`, `gatewayAPI/`, `http/`, `longhorn/`, `MongoDB/`).
-- Herramientas que el README indica descargar: `kubectl`, `helm` (v3.13.1), `ansible` con `community.libvirt`, `dnspython`.
-- No hay `requirements.txt`; `VMS.md` lista `pip install ansible dnspython` y `ansible-galaxy collection install community.libvirt`.
+## Estructura activa
+- `README.md`: preparación del host, imagen cloud, VMs y flujo de instalación de k3s.
+- `inventory.ini`: inventario Ansible; grupo `[nodes]` con `node01`–`node04`, usuario `root` y clave `data/keys`.
+- `ansible.cfg`: usa `inventory.ini`, desactiva la comprobación de host keys y fija `forks=10`.
+- `playbook/vm.yaml`: crea una VM, imagen y configuración cloud-init con `virt-install` y `cloud-localds`.
+- `playbook/vms.yaml`: lanza `vm.yaml` en paralelo para los nodos del inventario.
+- `playbook/hosts.yaml`: resuelve nombres de nodos y agrega sus IP a `/etc/hosts` de los nodos.
+- `playbook/update.yaml`: actualiza paquetes y reinicia cuando el sistema lo solicita.
+- `playbook/k3s.yaml`: instala k3s en `node01`, une los agentes y copia `kubeconfig` al proyecto.
+- `templates/`: plantillas cloud-init; la red asigna IP estática tomada de DNS, interfaz `ens2` y gateway `192.168.122.1`.
+- `Traefik/Traefik.yaml`: configuración del dashboard de Traefik y su `IngressRoute`.
+- `longhorn/`: guía de despliegue de Longhorn y ejemplo de aplicación lighttpd con PVC compartido.
+- `start.sh`, `stop.sh`, `delete.sh`, `k3s.sh`, `ssh.sh`, `copy.sh`: operaciones de VMs y acceso remoto.
+- `.gitignore`: excluye `venv/`, `data/`, `kubeconfig`, binarios `kubectl`/`helm` y artefactos.
 
-## Estructura
-- `README.md`: guía principal (registry, VMs, Ansible, kubeadm, flannel, metrics-server, prueba hello-world, destrucción, helm).
-- `Simple.md`: guía abreviada de instalación. Solapa con `README.md`.
-- `NETWORK.md`: rutas y NAT para acceder a la red 192.168.122.0/24 de las VMs.
-- `Storage.MD`: instalación de local-path-provisioner.
-- `VMS.md`: dependencias de Ansible.
-- `inventory.ini`: grupo `[nodes]` con node01–node04; `ansible_user=root`, clave `./data/keys`.
-- `ansible.cfg`: inventario por defecto, `host_key_checking=False`, `forks=10`.
-- `up.sh`: crea las VMs, prepara nodos, instala kubeadm, flannel y metrics-server.
-- `k3s.sh`: alternativa con k3s (node01 server, resto agentes; configura Traefik).
-- `start.sh` / `stop.sh`: arrancan y apagan las VMs, esperando SSH.
-- `snap.sh <mensaje>`: snapshot `--disk-only` de cada VM.
-- `delete.sh`: borra snapshots, destruye y elimina las VMs con su almacenamiento.
-- `ssh.sh <nodo> <cmd>` y `copy.sh <nodo> <origen> <destino>`: SSH/SCP con la clave de `data/keys`.
-- `playbook/`: `vm.yaml` (crear VM), `hosts.yaml`, `update.yaml`, `k8s.yaml`, `k8s-master.yaml`, `k8s-worker.yaml`, `local.yaml` (sin Internet), `registry.yaml`, `longhorn.yaml`, `reboot.yaml`.
-- `templates/`: `user-data.j2`, `meta-data.j2`, `network-config.j2` para cloud-init.
-- `apisix/`, `gatewayAPI/`: APISIX y Gateway API (etcd, ingress, rutas de prueba).
-- `http/`: HAProxy y lighttpd de ejemplo.
-- `longhorn/`: lighttpd con PVC compartido.
-- `MongoDB/`: ReplicaSet de MongoDB en StatefulSet, PV y playbook (no revisados en detalle).
+## Flujo y comandos
+Ejecutar comandos desde la raíz: los scripts y playbooks dependen de rutas relativas al proyecto.
 
-## Comandos
-Preparación (desde la raíz; crea `data/`):
+La guía documenta este flujo de Ansible:
 ```bash
-mkdir data
-wget -O data/ubuntu24.img <url-de-la-imagen>
-ssh-keygen -t ed25519 -f data/keys -N "" -q
-qemu-img convert -f qcow2 -O qcow2 data/ubuntu24.img data/TEMPLATE.qcow2
-qemu-img resize data/TEMPLATE.qcow2 +20G
-python3 -m venv venv && source venv/bin/activate && pip install ansible dnspython
-ansible-galaxy collection install community.libvirt
+ansible-playbook playbook/vms.yaml
+ansible-playbook playbook/hosts.yaml
+ansible-playbook playbook/update.yaml
+ansible-playbook playbook/k3s.yaml
+export KUBECONFIG="$PWD/kubeconfig"
+kubectl get nodes
 ```
-Clúster:
-```bash
-./up.sh                 # crea todo el clúster (kubeadm)
-./start.sh | ./stop.sh  # arranca / apaga VMs
-./snap.sh "<mensaje>"   # snapshot de las VMs
-./delete.sh             # destruye VMs y almacenamiento (irreversible)
-./k3s.sh                # alternativa con k3s
-```
-Playbooks sueltos (orden de `README.md`): `hosts.yaml`, `update.yaml`, `k8s.yaml`, `local.yaml`, `registry.yaml`, `k8s-master.yaml`, `k8s-worker.yaml`.
-- Tests: no hay. Verificación manual: `kubectl get nodes`, `kubectl top nodes`.
-- Ejecución real no verificada en este entorno.
+`README.md` también propone aplicar la etiqueta worker a `node02`–`node04` e instalar Traefik con `ansible-playbook Traefik/Traefik.yaml`.
 
-## Configuración
-- `inventory.ini`: nodos, usuario y clave SSH.
-- `data/` (ignorado): claves, imágenes y `TEMPLATE.qcow2`.
-- `kubeconfig`, `kubectl`, `helm`: generados, ignorados por git.
-- Registry local `192.168.0.130:5000` (hardcoded en `README.md` y `NETWORK.md`).
-- Rutas absolutas de otro usuario en `ssh.sh` y `copy.sh` (`/home/toletum/.ssh/known_hosts`).
-- Sin variables de entorno.
+`./k3s.sh` es otra vía de aprovisionamiento: crea las VMs en paralelo, ejecuta hosts/update, instala k3s mediante SSH, obtiene el kubeconfig y configura el dashboard. No confundirla con la secuencia de playbooks ni ejecutar ambas sin comprobar el estado de las VMs y del clúster.
 
-## Convenciones y reglas para agentes
-- Ejecutar los scripts desde la raíz: usan `data/keys`, `inventory.ini` y `playbook/` con rutas relativas.
-- Los nodos se listan en `inventory.ini`, sección `[nodes]`; los scripts los leen con `awk`. Añadir nodos ahí.
-- No versionar `data/`, `kubeconfig` ni binarios (ver `.gitignore`).
-- `ssh.sh` y `copy.sh` eliminan la entrada del nodo en `known_hosts` antes de conectar.
-- Antes de ejecutar `delete.sh`, `up.sh` o `k3s.sh` confirmar con el usuario: destruyen o recrean VMs.
+- `./start.sh`: inicia los dominios listados en `[nodes]` y espera a que responda SSH.
+- `./stop.sh`: apaga los nodos por SSH y espera su estado `shut off` en libvirt.
+- `./delete.sh`: elimina snapshots, destruye los dominios y borra sus discos con `virsh undefine --remove-all-storage --nvram`.
+- `./ssh.sh <nodo> <comando>`: ejecuta un comando SSH como `root`.
+- `./copy.sh <nodo> <archivo-remoto> <destino-local>`: copia un archivo desde el nodo a la máquina local.
 
-## Estado
-- Sin tests. Hay dos guías solapadas (`README.md` y `Simple.md`) y una antigua (`gatewayAPI/README-OLD.md`).
-- **Secreto expuesto en el repo**: `apisix/README.md` (línea 23) y `gatewayAPI/README-OLD.md` (línea 66) contienen una API key literal de APISIX en un `curl`. Redactada aquí. Rotarla y reemplazarla por una variable de entorno o un Secret.
-- `k3s.sh` activa el dashboard de Traefik con `--api.insecure=true` (sin autenticación).
-- `metrics-server` se instala con `--kubelet-insecure-tls`.
-- Las URLs de manifiestos apuntan a `releases/latest` o `master` (sin versión fija); `Storage.MD` usa `master`.
-- `delete.sh` elimina almacenamiento sin confirmación.
-- `README.md` referencia Kubernetes v1.31.14 y una imagen Ubuntu "plucky" minimal; no verificado que siga disponible.
-- Estado del clúster: no verificado.
+No existen en la raíz `up.sh`, `snap.sh` ni los playbooks kubeadm citados en documentación antigua; no documentarlos como comandos disponibles.
+
+## Requisitos y configuración
+- Host Linux con KVM/libvirt, `virsh`, `virt-install`, `cloud-localds` y `qemu-img`; la guía de instalación de paquetes usa comandos de Arch Linux.
+- Python/Ansible y dependencias usadas por los playbooks. `vm.yaml` llama al lookup `community.general.dig`; `Traefik/Traefik.yaml` usa `kubernetes.core.k8s`. No hay un archivo de requirements que fije estas colecciones.
+- Preparación de datos según `README.md`: imagen Ubuntu en `data/ubuntu24.img`, clave SSH `data/keys` y `data/keys.pub`, y plantilla `data/TEMPLATE.qcow2`.
+- Los nombres `node01`–`node04` deben resolver desde el host (la guía muestra entradas en `/etc/hosts`). `vm.yaml` usa la red `virbr0`, gateway `192.168.122.1` y los valores IP de la resolución DNS.
+- `inventory.ini` define usuario, clave y `ansible_python_interpreter`; añade o cambia nodos allí solo si también se actualizan los scripts/playbooks que actualmente tienen nodos fijados en su lógica.
+- `ssh.sh` y `copy.sh` usan la ruta fija `/home/toletum/.ssh/known_hosts`; varios comandos desactivan la validación de host keys.
+- No versionar claves, imágenes, logs, `kubeconfig` ni binarios descargados. `kubeconfig` contiene credenciales de acceso al clúster.
+
+## Reglas para cambios y operaciones
+- Antes de editar, revisar solo archivos fuera de `OLD/`; no recuperar ni reactivar instrucciones de esas carpetas.
+- Conservar las rutas relativas y el inventario como fuente de nodos; las operaciones deben ejecutarse desde la raíz.
+- No ejecutar comandos que creen, reconfiguren o eliminen VMs/clúster sin autorización explícita. Confirmar especialmente antes de `delete.sh`, `k3s.sh`, `playbook/vm.yaml` o `playbook/vms.yaml`: `delete.sh` borra discos y `vm.yaml` copia la imagen plantilla sobre el disco de destino con `force: yes`.
+- No ejecutar `delete.sh` como parte de una verificación: es irreversible y no pide confirmación.
+- No exponer claves ni kubeconfig en logs, documentación o control de versiones.
+
+## Estado conocido y validación
+- No hay suite de tests; la ejecución real requiere un host libvirt y VMs, no disponibles para validación ordinaria.
+- `start.sh` y `stop.sh` esperan indefinidamente a SSH/virsh si un nodo no alcanza el estado esperado.
+- `k3s.sh` y `Traefik/Traefik.yaml` habilitan el dashboard de Traefik con `--api.insecure=true`; el ejemplo publica la ruta por HTTP sin autenticación.
+- La instalación de k3s usa el instalador remoto `https://get.k3s.io` sin fijar versión.
+- `Traefik/Traefik.yaml` notifica el handler `Verificar despliegue`, pero no define ese handler; además requiere la colección `kubernetes.core`.
+- `longhorn/README.md` referencia `playbook/longhorn.yaml`, que no está presente entre los playbooks activos.
+- Para validaciones locales, usar `bash -n` sobre los scripts y `ansible-playbook --syntax-check` sobre los playbooks; no ejecutar playbooks reales como sustituto de una prueba de sintaxis.
+- Estado del clúster y compatibilidad actual de las versiones/URLs: no verificados.
