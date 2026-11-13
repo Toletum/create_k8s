@@ -1,0 +1,100 @@
+- name: MongoDB con ReplicaSet
+  hosts: localhost
+  become: yes
+  vars:
+    project_root: "{{ playbook_dir | dirname }}"
+    KUBECTL: "{{ project_root }}/kubectl --kubeconfig {{ project_root }}/kubeconfig"
+  tasks:
+    - name: Etiquetar nodos para mongo
+      ansible.builtin.command: "{{ KUBECTL }} label nodes {{ item }} app=mongo --overwrite"
+      loop:
+        - node02
+        - node03
+        - node04
+      tags: [labels]
+
+    - name: Crear volumen para mongo
+      ansible.builtin.file:
+        path: /mnt/mongo-data
+        state: directory
+      loop:
+        - node02
+        - node03
+        - node04
+      delegate_to: "{{ item }}"
+      vars:
+        ansible_user: root
+      tags: [storage]
+
+    - name: Generar secreto para MongoDB
+      shell: |
+        key=$(openssl rand -base64 756)
+        {{ KUBECTL }} create secret generic mongo-keyfile --from-literal=keyfile="$key" --dry-run=client -o yaml | {{ KUBECTL }} apply -f -
+      tags: [keyfile]
+
+    - name: Preparar los PVC
+      ansible.builtin.command: "{{ KUBECTL }} apply -f {{ project_root }}/MongoDB/mongo-pv.yaml"
+      tags: [pvc]
+
+    - name: Aplicar StatefulSet
+      ansible.builtin.command: "{{ KUBECTL }} apply -f {{ project_root }}/MongoDB/mongo-statefulset-host.yaml"
+      tags: [apply]
+
+    - name: Esperar a que haya 3 pods mongo running 1/4
+      shell: "{{ KUBECTL }} wait --for=condition=ready pod -l app=mongo --timeout=300s"
+      tags: [wait]
+
+    - name: Esperar a que haya 3 pods mongo running 2/4
+      shell: "{{ KUBECTL }} wait --for=condition=ready pod -l app=mongo --timeout=300s"
+      tags: [wait]
+
+    - name: Esperar a que haya 3 pods mongo running 3/4
+      shell: "{{ KUBECTL }} wait --for=condition=ready pod -l app=mongo --timeout=300s"
+      tags: [wait]
+
+    - name: Esperar a que haya 3 pods mongo running 4/4
+      shell: "{{ KUBECTL }} wait --for=condition=ready pod -l app=mongo --timeout=300s"
+      tags: [wait]
+
+    - name: Iniciar replica set
+      shell: |
+        {{ KUBECTL }} exec -i mongo-0 -c mongo -- mongosh --eval '
+        rs.initiate({
+          _id: "rs0",
+          members: [
+            { _id: 0, host: "node02:27017" },
+            { _id: 1, host: "node03:27017" },
+            { _id: 2, host: "node04:27017" }
+          ]
+        });'
+      register: rs_init
+      ignore_errors: yes
+      tags: [rs]
+
+    - name: Mostrar resultado rs
+      debug:
+        var: rs_init.stdout
+      tags: [rs]
+
+    - name: RS status
+      ansible.builtin.fail:
+        msg: "Error: rs.initiate no devolvió { ok: 1 }, revisar pods y configuración"
+      when: "rs_init.stdout.strip() != '{ ok: 1 }'"
+      tags: [rs]
+
+    - name: Crear usuario admin
+      shell: |
+        {{ KUBECTL }} exec -i mongo-0 -c mongo -- mongosh mongodb://127.0.0.1:27017/admin --eval '
+        db.createUser({
+          user: "admin",
+          pwd: "admin",
+          roles: [{ role: "root", db: "admin" }]
+        });'
+      register: admin_user
+      ignore_errors: yes
+      tags: [adminuser]
+
+    - name: Mostrar resultado admin
+      debug:
+        var: admin_user.stdout
+      tags: [adminuser]

@@ -1,0 +1,68 @@
+# PreInstall
+```bash
+mkdir data  
+wget -O data/ubuntu24.img https://cloud-images.ubuntu.com/minimal/daily/plucky/current/plucky-minimal-cloudimg-amd64.img
+ssh-keygen -t ed25519 -f data/keys -N "" -q
+qemu-img convert -f qcow2 -O qcow2 data/ubuntu24.img data/TEMPLATE.qcow2
+qemu-img resize data/TEMPLATE.qcow2 +20G
+```
+
+## Install ansible
+```bash
+python3 -m venv --system-site-packages venv
+source venv/bin/activate
+pip install ansible dnspython
+```
+
+## kubectl
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+
+## Create nodes
+```bash
+
+NODES=$(awk '/\[nodes\]/{flag=1;next} /\[.*\]/{flag=0} flag && NF' inventory.ini)
+for node in ${NODES}; do
+  {
+  echo $node
+  ansible-playbook playbook/vm.yaml -e "node=${node}" > "data/${node}.log" 2>&1
+  } &
+done && wait
+
+for node in ${NODES}; do
+  cat "data/${node}.log"
+done
+
+virsh list
+```
+
+## Install k8s
+```bash
+ansible-playbook playbook/hosts.yaml
+ansible-playbook playbook/update.yaml
+ansible-playbook playbook/k8s.yaml
+
+
+ansible-playbook playbook/k8s-master.yaml
+
+scp -o StrictHostKeyChecking=no -o ConnectTimeout=2 -i data/keys root@node01:/etc/kubernetes/admin.conf kubeconfig
+
+
+alias kubectl="$PWD/kubectl --kubeconfig $PWD/kubeconfig"
+alias k="$PWD/kubectl --kubeconfig $PWD/kubeconfig"
+
+kubectl get nodes
+
+ansible-playbook playbook/k8s-worker.yaml
+
+kubectl get nodes
+
+kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+kubectl patch deployment metrics-server -n kube-system --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--kubelet-insecure-tls"}]'
+
+until kubectl top nodes >/dev/null 2>&1; do
+  echo "Esperando a que Metrics Server esté listo..."
+  sleep 5
+done
+
+kubectl top nodes
