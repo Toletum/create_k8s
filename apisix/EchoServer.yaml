@@ -24,18 +24,10 @@ spec:
               containerPort: 80
               protocol: TCP
           env:
-            - name: PORT
-              value: "80"
             - name: APP_ENV
               value: "development"
             - name: APP_VERSION
               value: "1.0.0"
-            - name: ENABLE__ENVIRONMENT
-              value: "true"
-            - name: ENABLE__REQUEST
-              value: "true"
-            - name: ENABLE__HEADER
-              value: "true"
           readinessProbe:
             httpGet:
               path: /
