@@ -19,7 +19,7 @@ Scripts y playbooks de Ansible/Bash para aprovisionar VMs Ubuntu con KVM/libvirt
 - `templates/`: plantillas cloud-init; la red asigna IP estática tomada de DNS, interfaz `ens2` y gateway `192.168.122.1`.
 - `Traefik/Traefik.yaml`: configuración del dashboard de Traefik y su `IngressRoute`.
 - `longhorn/`: guía de despliegue de Longhorn y ejemplo de aplicación lighttpd con PVC compartido.
-- `start.sh`, `stop.sh`, `delete.sh`, `k3s.sh`, `ssh.sh`, `copy.sh`: operaciones de VMs y acceso remoto.
+- `start.sh`, `stop.sh`, `delete.sh`, `ssh.sh`, `copy.sh`: operaciones de VMs y acceso remoto.
 - `.gitignore`: excluye `venv/`, `data/`, `kubeconfig`, binarios `kubectl`/`helm` y artefactos.
 
 ## Flujo y comandos
@@ -36,7 +36,6 @@ kubectl get nodes
 ```
 `README.md` también propone aplicar la etiqueta worker a `node02`–`node04` e instalar Traefik con `ansible-playbook Traefik/Traefik.yaml`.
 
-`./k3s.sh` es otra vía de aprovisionamiento: crea las VMs en paralelo, ejecuta hosts/update, instala k3s mediante SSH, obtiene el kubeconfig y configura el dashboard. No confundirla con la secuencia de playbooks ni ejecutar ambas sin comprobar el estado de las VMs y del clúster.
 
 - `./start.sh`: inicia los dominios listados en `[nodes]` y espera a que responda SSH.
 - `./stop.sh`: apaga los nodos por SSH y espera su estado `shut off` en libvirt.
@@ -58,14 +57,14 @@ No existen en la raíz `up.sh`, `snap.sh` ni los playbooks kubeadm citados en do
 ## Reglas para cambios y operaciones
 - Antes de editar, revisar solo archivos fuera de `OLD/`; no recuperar ni reactivar instrucciones de esas carpetas.
 - Conservar las rutas relativas y el inventario como fuente de nodos; las operaciones deben ejecutarse desde la raíz.
-- No ejecutar comandos que creen, reconfiguren o eliminen VMs/clúster sin autorización explícita. Confirmar especialmente antes de `delete.sh`, `k3s.sh`, `playbook/vm.yaml` o `playbook/vms.yaml`: `delete.sh` borra discos y `vm.yaml` copia la imagen plantilla sobre el disco de destino con `force: yes`.
+- No ejecutar comandos que creen, reconfiguren o eliminen VMs/clúster sin autorización explícita. Confirmar especialmente antes de `delete.sh`, `playbook/vm.yaml` o `playbook/vms.yaml`: `delete.sh` borra discos y `vm.yaml` copia la imagen plantilla sobre el disco de destino con `force: yes`.
 - No ejecutar `delete.sh` como parte de una verificación: es irreversible y no pide confirmación.
 - No exponer claves ni kubeconfig en logs, documentación o control de versiones.
 
 ## Estado conocido y validación
 - No hay suite de tests; la ejecución real requiere un host libvirt y VMs, no disponibles para validación ordinaria.
 - `start.sh` y `stop.sh` esperan indefinidamente a SSH/virsh si un nodo no alcanza el estado esperado.
-- `k3s.sh` y `Traefik/Traefik.yaml` habilitan el dashboard de Traefik con `--api.insecure=true`; el ejemplo publica la ruta por HTTP sin autenticación.
+- `Traefik/Traefik.yaml` habilita el dashboard de Traefik con `--api.insecure=true`; el ejemplo publica la ruta por HTTP sin autenticación.
 - La instalación de k3s usa el instalador remoto `https://get.k3s.io` sin fijar versión.
 - `Traefik/Traefik.yaml` notifica el handler `Verificar despliegue`, pero no define ese handler; además requiere la colección `kubernetes.core`.
 - `longhorn/README.md` referencia `playbook/longhorn.yaml`, que no está presente entre los playbooks activos.
