@@ -1,5 +1,4 @@
----
-- name: Configurar Traefik Dashboard en node012
+- name: Configurar Traefik Dashboard en K3s
   hosts: node01
   gather_facts: false
   tasks:
@@ -17,17 +16,31 @@
               additionalArguments:
                 - "--api.dashboard=true"
                 - "--api.insecure=true"
+            providers:
+              kubernetesCRD:
+                enabled: true
+            service:
+              spec:
+                externalTrafficPolicy: Local
         owner: root
         group: root
         mode: '0644'
-      notify: Verificar despliegue
+      notify: Reiniciar K3s para aplicar HelmChartConfig
+
+  handlers:
+    - name: Reiniciar K3s para aplicar HelmChartConfig
+      ansible.builtin.systemd:
+        name: k3s
+        state: restarted
 
 - name: Aplicar IngressRoute para el Dashboard en el cluster
   hosts: localhost
   connection: local
   gather_facts: false
+  vars:
+    ansible_python_interpreter: "/home/toletum/dev/create_k8s/venv/bin/python3"
   tasks:
-    - name: Aplicar IngressRoute apuntando a node012
+    - name: Aplicar IngressRoute apuntando al dashboard
       kubernetes.core.k8s:
         state: present
         definition:
@@ -45,3 +58,13 @@
                 services:
                   - name: api@internal
                     kind: TraefikService
+
+    - name: Verificar acceso HTTP al Dashboard de Traefik
+      ansible.builtin.uri:
+        url: "http://node01/dashboard/"
+        method: GET
+        status_code: 200
+      register: dashboard_check
+      retries: 5
+      delay: 3
+      until: dashboard_check is succeeded

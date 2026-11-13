@@ -47,7 +47,7 @@ qemu-img resize data/TEMPLATE.qcow2 +20G
 
 ## Install ansible
 ```bash
-python3 -m venv --system-site-packages venv && source venv/bin/activate && pip install ansible dnspython gi
+python3 -m venv --system-site-packages venv && source venv/bin/activate && pip install ansible dnspython gi pip install kubernetes
 ```
 
 ## Create nodes
@@ -91,5 +91,5 @@ kubectl get StorageClass
 ```bash
 ansible-playbook Traefik/Traefik.yaml
 
-curl http://node01/dashboard/
+BROWSER: http://node01/dashboard/
 ```
