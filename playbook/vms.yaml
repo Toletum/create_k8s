@@ -1,0 +1,39 @@
+---
+- name: Orquestar despliegue de VMs en paralelo y verificar con virsh
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    project_root: "{{ playbook_dir | dirname }}"
+    inventory_path: "{{ project_root }}/../inventory.ini"
+
+  tasks:
+    - name: Guardar el CWD local en una variable
+      ansible.builtin.set_fact:
+        root_dir: "{{ playbook_dir }}"
+
+    - name: Lanzar playbook/vm.yaml en paralelo para cada nodo
+      ansible.builtin.shell: "ansible-playbook -i {{ inventory_path }} {{ root_dir }}/vm.yaml -e 'node={{ item }}'"
+      async: 600
+      poll: 0
+      register: vm_jobs
+      loop: "{{ groups['nodes'] }}"
+
+    - name: Esperar a que terminen todos los despliegues de VMs
+      ansible.builtin.async_status:
+        jid: "{{ item.ansible_job_id }}"
+      register: job_results
+      until: job_results.finished
+      retries: 120
+      delay: 5
+      loop: "{{ vm_jobs.results }}"
+      loop_control:
+        label: "{{ item.ansible_job_id }}"
+
+    - name: Ejecutar virsh list
+      ansible.builtin.command: virsh list
+      register: virsh_output
+
+    - name: Mostrar el estado de las VMs en pantalla
+      ansible.builtin.debug:
+        msg: "{{ virsh_output.stdout_lines }}"

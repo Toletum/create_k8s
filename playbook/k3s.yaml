@@ -1,0 +1,49 @@
+---
+- name: Desplegar y configurar cluster K3s completo
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: 1. Instalar K3s Server en el nodo master (node01)
+      when: inventory_hostname == 'node01'
+      block:
+        - name: Instalar K3s server
+          ansible.builtin.shell:
+            cmd: curl -sfL https://get.k3s.io | sh -
+            creates: /usr/local/bin/k3s
+
+    - name: 2. Obtener el token de nodo desde node01
+      when: inventory_hostname == 'node01'
+      ansible.builtin.slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: k3s_token_raw
+
+    - name: 3. Instalar K3s Agent en los nodos worker (node02, node03, node04)
+      when: inventory_hostname in ['node02', 'node03', 'node04']
+      vars:
+        k3s_token: "{{ hostvars['node01']['k3s_token_raw']['content'] | b64decode | trim }}"
+      ansible.builtin.shell:
+        cmd: "curl -sfL https://get.k3s.io | K3S_URL=https://node01:6443 K3S_TOKEN='{{ k3s_token }}' sh -"
+        creates: /usr/local/bin/k3s
+
+- name: Leer k3s.yaml en node01 y guardarlo en localhost
+  hosts: node01
+  gather_facts: false
+  become: true
+  tags: [get_kubeconfig]
+  vars:
+    project_root: "{{ playbook_dir | dirname }}"
+    kubeconfig: "{{ project_root }}/kubeconfig"
+
+  tasks:
+    - name: Leer el archivo remoto con slurp
+      ansible.builtin.slurp:
+        src: /etc/rancher/k3s/k3s.yaml
+      register: k3s_yaml_file
+
+    - name: Guardar el kubeconfig modificado en localhost
+      ansible.builtin.copy:
+        content: "{{ k3s_yaml_file.content | b64decode | replace('localhost', 'node01')  | replace('127.0.0.1', 'node01') }}"
+        dest: "{{ kubeconfig }}"
+        mode: '0600'
+      delegate_to: localhost
+      become: false

@@ -1,0 +1,47 @@
+---
+- name: Configurar Traefik Dashboard en node012
+  hosts: node01
+  gather_facts: false
+  tasks:
+    - name: Crear configuracion de HelmChartConfig para Traefik
+      ansible.builtin.copy:
+        dest: /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
+        content: |
+          apiVersion: helm.cattle.io/v1
+          kind: HelmChartConfig
+          metadata:
+            name: traefik
+            namespace: kube-system
+          spec:
+            valuesContent: |-
+              additionalArguments:
+                - "--api.dashboard=true"
+                - "--api.insecure=true"
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Verificar despliegue
+
+- name: Aplicar IngressRoute para el Dashboard en el cluster
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Aplicar IngressRoute apuntando a node012
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: traefik.io/v1alpha1
+          kind: IngressRoute
+          metadata:
+            name: traefik-dashboard
+            namespace: kube-system
+          spec:
+            entryPoints:
+              - web
+            routes:
+              - match: Host(`node01`)
+                kind: Rule
+                services:
+                  - name: api@internal
+                    kind: TraefikService
