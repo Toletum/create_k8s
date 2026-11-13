@@ -80,16 +80,6 @@ kubectl label node node02 node03 node04 kubernetes.io/role=worker
 
 
 # Local Path Provisioner
-## Install
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
-
 kubectl get StorageClass
-```
-
-# Install Proxy
-```bash
-ansible-playbook Traefik/Traefik.yaml
-
-BROWSER: http://node01/dashboard/
 ```

@@ -1,7 +1,31 @@
 ---
+- name: Leer k3s.yaml en node01 y guardarlo en localhost
+  hosts: node01
+  gather_facts: false
+  become: true
+  tasks:
+    - name: 0. Crear el directorio de configuración de K3s
+      ansible.builtin.file:
+        path: /etc/rancher/k3s
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: 0. Configurar K3s (Deshabilitar Traefik)
+      ansible.builtin.copy:
+        dest: /etc/rancher/k3s/config.yaml
+        content: |
+          disable:
+            - traefik
+        owner: root
+        group: root
+        mode: '0644'
+
 - name: Desplegar y configurar cluster K3s completo
   hosts: all
   gather_facts: true
+  become: true
   tasks:
     - name: 1. Instalar K3s Server en el nodo master (node01)
       when: inventory_hostname == 'node01'

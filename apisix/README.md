@@ -1,6 +1,3 @@
-kubectl apply -f gatewayAPI/test-pod.yaml
-kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.30/deploy/local-path-storage.yaml
-
 # Kubectl
 
 ## Crear NS
@@ -19,11 +16,29 @@ kubectl -n apisix get pods
 
 ## Crear Route
 
+kubectl apply -f apisix/EchoServer.yaml
+
 curl "http://node02:9180/apisix/admin/routes/1" \
 -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
 -X PUT -d '
 {
   "uri": "/echo",
+  "plugins": {
+    "proxy-rewrite": {
+      "headers": {
+        "set": {
+          "X-Server-Interal": "K3S"
+        }
+      }
+    },
+    "response-rewrite": {
+      "headers": {
+        "set": {
+          "X-Server-ID": "Toletum"
+        }
+      }
+    }
+  },
   "upstream": {
     "type": "roundrobin",
     "nodes": {
