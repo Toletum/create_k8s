@@ -28,6 +28,10 @@ chmod +x kubectl
 mv kubectl /usr/local/bin
 
 
+curl -LO https://get.helm.sh/helm-v4.3.2-linux-amd64.tar.gz
+tar xvf helm-v4.3.2-linux-amd64.tar.gz
+sudo mv linux-amd64/helm /usr/local/bin/
+rm -rf linux-amd64/
 
 sudo virsh -c qemu:///system net-start default
 sudo virsh -c qemu:///system net-autostart default

@@ -70,3 +70,14 @@ No existen en la raíz `up.sh`, `snap.sh` ni los playbooks kubeadm citados en do
 - `longhorn/README.md` referencia `playbook/longhorn.yaml`, que no está presente entre los playbooks activos.
 - Para validaciones locales, usar `bash -n` sobre los scripts y `ansible-playbook --syntax-check` sobre los playbooks; no ejecutar playbooks reales como sustituto de una prueba de sintaxis.
 - Estado del clúster y compatibilidad actual de las versiones/URLs: no verificados.
+
+## Configuración por defecto
+- **Inventario Ansible:** `inventory.ini`; los nodos son `node01`, `node02`, `node03` y `node04`. Ansible usa `root`, `become=true`, la clave privada `./data/keys` y `/usr/bin/python3`. La conexión local está definida como `localhost`.
+- **Ansible:** `ansible.cfg` selecciona `inventory.ini`, desactiva la comprobación de host keys y configura `forks=10`.
+- **Roles de k3s:** `node01` es el servidor; `node02`–`node04` son agentes. `playbook/k3s.yaml` deshabilita Traefik en la configuración de k3s e instala desde `https://get.k3s.io` sin fijar una versión. El acceso de agentes apunta a `https://node01:6443`.
+- **VMs:** `playbook/vm.yaml` usa 8192 MiB de memoria, 4 vCPU, `qemu:///system`, la red `virbr0` y el modelo `virtio`. La imagen base es `data/TEMPLATE.qcow2`; se copia a `data/<nodo>.qcow2` y la copia usa `force: yes`, por lo que puede sobrescribir el disco existente de ese nodo.
+- **Cloud-init y red:** el nombre de interfaz predeterminado es `ens2`; la dirección se obtiene resolviendo el nombre del nodo y se configura con máscara `/24`, gateway `192.168.122.1` y DNS `8.8.8.8` y `1.1.1.1`. Las direcciones `192.168.122.2`–`192.168.122.5` del `README.md` son un ejemplo de entradas para `/etc/hosts`, no IP fijadas por el playbook.
+- **Credenciales de VM:** cloud-init crea el acceso SSH de `root` usando `data/keys.pub`; los playbooks esperan la clave privada en `data/keys`. No incluir ninguna de estas claves en documentación ni en Git.
+- **Archivos de imagen documentados:** `data/ubuntu24.img` es la imagen de origen y `data/TEMPLATE.qcow2` la plantilla. El `README.md` documenta convertir la imagen a QCOW2 y ampliar la plantilla en 20 GiB.
+- **Kubeconfig:** `playbook/k3s.yaml` guarda el archivo en la raíz del proyecto como `kubeconfig`, con permisos `0600`, y reemplaza la dirección local por `node01`. Tratarlo como secreto.
+- Ejecutar los comandos desde la raíz del proyecto: las rutas relativas de scripts y playbooks dependen del directorio actual.

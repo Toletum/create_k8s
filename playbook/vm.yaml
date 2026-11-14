@@ -83,6 +83,7 @@
             --disk path={{ data_path }}/cloud-init-{{ node_name }}.iso,device=cdrom
             --os-variant generic
             --network bridge=virbr0,model=virtio
+            --rng backend=random,device=/dev/urandom,model=virtio \
             --import
             --graphics none
             --noautoconsole
