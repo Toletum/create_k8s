@@ -17,6 +17,10 @@
         dest: /etc/modules-load.d/longhorn.conf
         content: |
           iscsi_tcp
+          dm_crypt
+          vfio_pci
+          uio_pci_generic
+          nvme-tcp
         mode: "0644"
       tags: task2
 
@@ -26,7 +30,7 @@
         state: present
         update_cache: yes
       tags: task3
-      
+
     - name: 4. Habilitar y arrancar el servicio iscsid
       ansible.builtin.systemd:
         name: iscsid
@@ -35,3 +39,10 @@
         masked: no
       tags: task4
 
+    - name: 5. Reiniciar el nodo si es necesario
+      ansible.builtin.reboot:
+        msg: "Reinicio provocado por actualización de paquetes vía Ansible"
+        connect_timeout: 5
+        reboot_timeout: 300
+        pre_reboot_delay: 0
+        post_reboot_delay: 30

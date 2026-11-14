@@ -1,7 +1,8 @@
 # Longhorn
 ## Check pre-install
 ```bash
-ansible-playbook playbook/longhorn.yaml
+ansible-playbook longhorn/longhorn.yaml
+ansible-playbook longhorn/reboot.yaml
 ```
 
 ```bash
@@ -24,7 +25,7 @@ helm install longhorn longhorn/longhorn --namespace longhorn-system --create-nam
 
 # Longhorn con kubectl
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.7.2/deploy/longhorn.yaml
+kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/refs/heads/master/deploy/longhorn.yaml
 kubectl -n longhorn-system get pods
 
 kubectl -n longhorn-system patch svc longhorn-frontend -p '{"spec": {"type": "NodePort"}}'
