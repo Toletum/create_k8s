@@ -1,0 +1,120 @@
+---
+- name: Desplegar y configurar MongoDB Replica Set en Kubernetes
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    k8s_namespace: "default"
+    project_root: "{{ playbook_dir | dirname }}"
+    ansible_python_interpreter: "{{ project_root }}/venv/bin/python"
+
+  tasks:
+    - name: 1. Generar clave aleatoria para MongoDB Keyfile
+      ansible.builtin.set_fact:
+        mongo_key: "{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_letters,digits length=1024') }}"
+
+    - name: 2. Comprobar si el secreto ya existe
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Secret
+        namespace: "{{ k8s_namespace }}"
+        name: mongo-keyfile
+      register: existing_secret
+
+    - name: 3. Crear el secreto de Kubernetes para el Keyfile (Solo si no existe)
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: mongo-keyfile
+            namespace: "{{ k8s_namespace }}"
+          type: Opaque
+          stringData:
+            keyfile: "{{ mongo_key }}"
+      when: existing_secret.resources | length == 0
+
+    - name: 4. Aplicar el StatefulSet y manifiestos de MongoDB
+      kubernetes.core.k8s:
+        state: present
+        src: "mongo-statefulset-host.yaml"
+        namespace: "{{ k8s_namespace }}"
+
+    - name: 5. Esperar al mod mongo-0 de MongoDB esté listo
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Pod
+        namespace: "{{ k8s_namespace }}"
+        name: "{{ item }}"
+      register: pod_status
+      until: >
+        pod_status.resources is defined and
+        pod_status.resources | length > 0 and
+        pod_status.resources[0].status is defined and
+        pod_status.resources[0].status.conditions is defined and
+        (pod_status.resources[0].status.conditions
+         | selectattr('type', 'equalto', 'Ready')
+         | selectattr('status', 'equalto', 'True')
+         | list | length) > 0
+      retries: 60
+      delay: 5
+      loop:
+        - mongo-0
+
+    - name: 6. MongoDB RS inicialización, creación de admin y adición de miembros
+      kubernetes.core.k8s_exec:
+        namespace: "{{ k8s_namespace }}"
+        pod: mongo-0
+        container: mongo
+        command: >-
+          sh -c "
+          mongosh --quiet --eval '
+            try {
+              const hostname = process.env.HOSTNAME;
+              const result = rs.initiate({
+                _id: \"rs0\",
+                members: [
+                  { _id: 0, host: hostname + \":27017\" }
+                ]
+              });
+              print(EJSON.stringify(result, null, 2));
+            } catch (e) {
+              print(e.message);
+            }
+          ' &&
+          mongosh mongodb://127.0.0.1:27017/admin --quiet --eval '
+            try {
+              const result = db.createUser({
+                user: \"admin\",
+                pwd: \"admin\",
+                roles: [{ role: \"root\", db: \"admin\" }]
+              });
+              print(EJSON.stringify(result, null, 2));
+            } catch (e) {
+              print(e.message);
+            }
+          ' &&
+          mongosh mongodb://admin:admin@127.0.0.1:27017/admin --quiet --eval '
+            const hosts = [
+              \"node02:27017\",
+              \"node03:27017\",
+              \"node04:27017\"
+            ];
+            hosts.forEach(host => {
+              try {
+                const res = rs.add(host);
+                print(\"Added \" + host + \":\", EJSON.stringify(res));
+              } catch (e) {
+                print(\"Skipped or failed for \" + host + \":\", e.message);
+              }
+            });
+          '
+          "
+      register: rs_initiate_result
+      changed_when: true
+
+    - name: 6.1. Mostrar resultado de la inicialización del Replica Set
+      ansible.builtin.debug:
+        var: rs_initiate_result.stdout_lines
